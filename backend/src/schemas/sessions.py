@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -168,3 +168,25 @@ class FilterValues(BaseModel):
     sources: list[str]
     projects: list[str]
     models: list[str]
+
+
+# ── Star / Batch operations ─────────────────────────────────────────────────
+
+
+class StarRequest(BaseModel):
+    """Request body for toggling session star status."""
+
+    is_starred: bool
+
+
+class BatchRequest(BaseModel):
+    """Request body for batch operations on sessions."""
+
+    session_ids: list[str] = Field(..., min_length=1, max_length=500)
+    action: str = Field(..., pattern=r"^(star|unstar|trash|restore)$")
+
+
+class BatchResponse(BaseModel):
+    """Response body for batch operations."""
+
+    affected: int

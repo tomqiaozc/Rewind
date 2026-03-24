@@ -1,16 +1,16 @@
 """Session query service — listing, detail, and filter retrieval."""
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from sqlalchemy import and_, asc, desc, func, select
+from sqlalchemy import and_, asc, desc, func, select, update
 
 from src.models.session import Message, MessageChunk, Session
 
 if TYPE_CHECKING:
-    import uuid
-
     from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -255,3 +255,154 @@ async def get_session_filters(
         projects=[row[0] for row in projects_result.all()],
         models=[row[0] for row in models_result.all()],
     )
+
+
+# ---------------------------------------------------------------------------
+# 4. star_session
+# ---------------------------------------------------------------------------
+
+
+async def star_session(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    session_id: uuid.UUID,
+    is_starred: bool,
+) -> bool:
+    """Set is_starred for a session. Returns True if found."""
+    stmt = select(Session).where(
+        and_(Session.id == session_id, Session.user_id == user_id)
+    )
+    session: Session | None = (await db.execute(stmt)).scalar_one_or_none()
+    if session is None:
+        return False
+    session.is_starred = is_starred
+    await db.commit()
+    return True
+
+
+# ---------------------------------------------------------------------------
+# 5. trash_session
+# ---------------------------------------------------------------------------
+
+
+async def trash_session(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    session_id: uuid.UUID,
+) -> bool:
+    """Soft-delete a session. Returns True if found and not already trashed."""
+    stmt = select(Session).where(
+        and_(
+            Session.id == session_id,
+            Session.user_id == user_id,
+            Session.deleted_at.is_(None),
+        )
+    )
+    session: Session | None = (await db.execute(stmt)).scalar_one_or_none()
+    if session is None:
+        return False
+    session.deleted_at = datetime.now(timezone.utc)
+    await db.commit()
+    return True
+
+
+# ---------------------------------------------------------------------------
+# 6. restore_session
+# ---------------------------------------------------------------------------
+
+
+async def restore_session(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    session_id: uuid.UUID,
+) -> bool:
+    """Restore a soft-deleted session. Returns True if found and was trashed."""
+    stmt = select(Session).where(
+        and_(
+            Session.id == session_id,
+            Session.user_id == user_id,
+            Session.deleted_at.isnot(None),
+        )
+    )
+    session: Session | None = (await db.execute(stmt)).scalar_one_or_none()
+    if session is None:
+        return False
+    session.deleted_at = None
+    await db.commit()
+    return True
+
+
+# ---------------------------------------------------------------------------
+# 7. list_trashed_sessions
+# ---------------------------------------------------------------------------
+
+
+async def list_trashed_sessions(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    page: int = 1,
+    page_size: int = 20,
+) -> tuple[list[Session], int]:
+    """List soft-deleted sessions, ordered by deleted_at DESC, paginated."""
+    conditions = [
+        Session.user_id == user_id,
+        Session.deleted_at.isnot(None),
+    ]
+    where_clause = and_(*conditions)
+
+    count_stmt = select(func.count()).select_from(Session).where(where_clause)
+    total_count: int = (await db.execute(count_stmt)).scalar_one()
+
+    items_stmt = (
+        select(Session)
+        .where(where_clause)
+        .order_by(desc(Session.deleted_at))
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    result = await db.execute(items_stmt)
+    items: list[Session] = list(result.scalars().all())
+
+    return items, total_count
+
+
+# ---------------------------------------------------------------------------
+# 8. batch_operation
+# ---------------------------------------------------------------------------
+
+
+async def batch_operation(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    session_ids: list[str],
+    action: str,
+) -> int:
+    """Perform a bulk operation on sessions. Returns affected row count.
+
+    Raises ``ValueError`` for unknown actions.
+    """
+    parsed_ids = [uuid.UUID(sid) for sid in session_ids]
+    base_where = and_(Session.user_id == user_id, Session.id.in_(parsed_ids))
+
+    if action == "star":
+        stmt = update(Session).where(base_where).values(is_starred=True)
+    elif action == "unstar":
+        stmt = update(Session).where(base_where).values(is_starred=False)
+    elif action == "trash":
+        stmt = (
+            update(Session)
+            .where(and_(base_where, Session.deleted_at.is_(None)))
+            .values(deleted_at=datetime.now(timezone.utc))
+        )
+    elif action == "restore":
+        stmt = (
+            update(Session)
+            .where(and_(base_where, Session.deleted_at.isnot(None)))
+            .values(deleted_at=None)
+        )
+    else:
+        raise ValueError(f"Unknown action: {action}")
+
+    result = await db.execute(stmt)
+    await db.commit()
+    return result.rowcount
