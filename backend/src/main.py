@@ -5,6 +5,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.ingest import router as ingest_router
+from src.api.search import router as search_router
+from src.api.sessions import router as sessions_router
+from src.api.stats import router as stats_router
 from src.config import settings
 
 app = FastAPI(
@@ -25,6 +28,9 @@ app.add_middleware(
 
 # Register routers
 app.include_router(ingest_router)
+app.include_router(sessions_router)
+app.include_router(search_router)
+app.include_router(stats_router)
 
 
 @app.get("/api/health")

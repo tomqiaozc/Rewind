@@ -48,6 +48,8 @@ select = ["E", "F", "W", "I", "N", "UP", "B", "A", "SIM", "TCH"]
 "src/schemas/*.py" = ["UP045", "TCH003"]
 # SQLAlchemy models need runtime type annotations (Optional[], List[]) on Python 3.9
 "src/models/*.py" = ["UP045", "UP006", "UP035"]
+# FastAPI route files need Optional[] for runtime parameter annotation on Python 3.9
+"src/api/*.py" = ["UP045", "TCH003"]
 
 [tool.mypy]
 python_version = "3.9"
