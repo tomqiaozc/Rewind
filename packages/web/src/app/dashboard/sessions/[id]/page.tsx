@@ -2,13 +2,16 @@
 
 import { useEffect, useState, useCallback, use } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Clock,
   MessageSquare,
+  Star,
+  Trash2,
   Zap,
 } from "lucide-react";
-import { getSession } from "@/lib/api";
+import { getSession, toggleStar, trashSession } from "@/lib/api";
 import type { SessionDetail } from "@/lib/types";
 import { SOURCE_LABELS } from "@/lib/types";
 import {
@@ -30,10 +33,34 @@ export default function SessionDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const router = useRouter();
   const [session, setSession] = useState<SessionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+
+  const handleToggleStar = useCallback(async () => {
+    if (!session) return;
+    const prev = session.is_starred;
+    // Optimistic update
+    setSession((s) => (s ? { ...s, is_starred: !prev } : s));
+    try {
+      await toggleStar(session.id, !prev);
+    } catch {
+      // Rollback on error
+      setSession((s) => (s ? { ...s, is_starred: prev } : s));
+    }
+  }, [session]);
+
+  const handleTrash = useCallback(async () => {
+    if (!session) return;
+    try {
+      await trashSession(session.id);
+      router.push("/dashboard/sessions");
+    } catch {
+      // Silently fail — user can retry
+    }
+  }, [session, router]);
 
   useEffect(() => {
     getSession(id)
@@ -102,19 +129,54 @@ export default function SessionDetailPage({
           <ArrowLeft className="size-4" />
         </Button>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-semibold">
-            {session.title || session.session_key}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="truncate text-xl font-semibold">
+              {session.title || session.session_key}
+            </h1>
+            <button
+              type="button"
+              onClick={handleToggleStar}
+              aria-label={
+                session.is_starred ? "Unstar session" : "Star session"
+              }
+            >
+              <Star
+                className={`size-5 ${
+                  session.is_starred
+                    ? "fill-yellow-400 text-yellow-400"
+                    : "text-muted-foreground/40 hover:text-yellow-400"
+                }`}
+              />
+            </button>
+          </div>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <Badge variant="secondary">
               {SOURCE_LABELS[session.source] || session.source}
             </Badge>
+            {session.tags?.map((tag) => (
+              <span
+                key={tag.id}
+                className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-white"
+                style={{ backgroundColor: tag.color }}
+              >
+                {tag.name}
+              </span>
+            ))}
             {session.project_name && <span>{session.project_name}</span>}
             {session.model && (
               <span className="text-muted-foreground/70">{session.model}</span>
             )}
           </div>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-destructive hover:bg-destructive/10"
+          onClick={handleTrash}
+        >
+          <Trash2 className="mr-1 size-4" />
+          Trash
+        </Button>
       </div>
 
       {/* Stats row */}

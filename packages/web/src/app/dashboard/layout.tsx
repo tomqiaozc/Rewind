@@ -1,6 +1,7 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardHeader } from "@/components/dashboard-header";
+import { SearchDialog } from "@/components/search-dialog";
 
 export default function DashboardLayout({
   children,
@@ -14,6 +15,7 @@ export default function DashboardLayout({
         <DashboardHeader />
         <main className="flex-1 p-4 lg:p-6">{children}</main>
       </SidebarInset>
+      <SearchDialog />
     </SidebarProvider>
   );
 }

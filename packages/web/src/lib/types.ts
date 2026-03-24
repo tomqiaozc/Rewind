@@ -16,6 +16,7 @@ export interface SessionListItem {
   title: string | null;
   is_starred: boolean;
   created_at: string;
+  tags: TagSummary[];
 }
 
 // Session list response (paginated)
@@ -121,6 +122,44 @@ export interface DashboardStats {
   sessions_by_source: Record<string, number>;
   sessions_by_day: DayCount[];
   recent_sessions: SessionListItem[];
+}
+
+// Tag (full, for settings page)
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+  created_at: string | null;
+  session_count: number;
+}
+
+// Project summary
+export interface ProjectSummary {
+  project_name: string;
+  session_count: number;
+  total_messages: number;
+  total_input_tokens: number;
+  total_output_tokens: number;
+  total_duration_seconds: number;
+  last_session_at: string | null;
+  sources: string[];
+}
+
+// Project activity
+export interface ProjectActivity {
+  date: string;
+  project_name: string;
+  count: number;
+}
+
+// Batch operations
+export interface BatchRequest {
+  session_ids: string[];
+  action: "star" | "unstar" | "trash" | "restore";
+}
+
+export interface BatchResponse {
+  affected: number;
 }
 
 // Source type display helpers

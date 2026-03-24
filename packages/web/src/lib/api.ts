@@ -5,11 +5,16 @@
  * In production, calls go through Next.js API route proxies (BFF pattern).
  */
 import type {
+  BatchRequest,
+  BatchResponse,
   DashboardStats,
   FilterValues,
+  ProjectActivity,
+  ProjectSummary,
   SearchResponse,
   SessionDetail,
   SessionListResponse,
+  Tag,
 } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -37,6 +42,11 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   if (!res.ok) {
     const body = await res.text().catch(() => "Unknown error");
     throw new ApiError(res.status, body);
+  }
+
+  // 204 No Content — return undefined (caller uses Promise<void>)
+  if (res.status === 204) {
+    return undefined as unknown as T;
   }
 
   return res.json() as Promise<T>;
@@ -101,3 +111,110 @@ export async function getDashboardStats(
 }
 
 export { ApiError };
+
+// ── Tags ──────────────────────────────────────────────────────────────
+
+export async function listTags(): Promise<Tag[]> {
+  return apiFetch<Tag[]>("/api/tags");
+}
+
+export async function createTag(body: { name: string; color: string }): Promise<Tag> {
+  return apiFetch<Tag>("/api/tags", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function updateTag(
+  id: string,
+  body: { name?: string; color?: string },
+): Promise<Tag> {
+  return apiFetch<Tag>(`/api/tags/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteTag(id: string): Promise<void> {
+  return apiFetch<void>(`/api/tags/${id}`, { method: "DELETE" });
+}
+
+export async function addTagToSession(
+  sessionId: string,
+  tagId: string,
+): Promise<void> {
+  return apiFetch<void>(`/api/sessions/${sessionId}/tags/${tagId}`, {
+    method: "PUT",
+  });
+}
+
+export async function removeTagFromSession(
+  sessionId: string,
+  tagId: string,
+): Promise<void> {
+  return apiFetch<void>(`/api/sessions/${sessionId}/tags/${tagId}`, {
+    method: "DELETE",
+  });
+}
+
+// ── Star ──────────────────────────────────────────────────────────────
+
+export async function toggleStar(
+  id: string,
+  isStarred: boolean,
+): Promise<{ is_starred: boolean }> {
+  return apiFetch<{ is_starred: boolean }>(`/api/sessions/${id}/star`, {
+    method: "PATCH",
+    body: JSON.stringify({ is_starred: isStarred }),
+  });
+}
+
+// ── Trash ─────────────────────────────────────────────────────────────
+
+export async function trashSession(id: string): Promise<void> {
+  return apiFetch<void>(`/api/sessions/${id}/trash`, { method: "POST" });
+}
+
+export async function restoreSession(id: string): Promise<void> {
+  return apiFetch<void>(`/api/sessions/${id}/trash`, { method: "DELETE" });
+}
+
+export async function listTrash(params?: {
+  page?: number;
+  page_size?: number;
+}): Promise<SessionListResponse> {
+  const searchParams = new URLSearchParams();
+  if (params) {
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined) searchParams.set(key, String(value));
+    }
+  }
+  const qs = searchParams.toString();
+  return apiFetch<SessionListResponse>(
+    `/api/sessions/trash${qs ? `?${qs}` : ""}`,
+  );
+}
+
+// ── Batch ─────────────────────────────────────────────────────────────
+
+export async function batchOperation(
+  body: BatchRequest,
+): Promise<BatchResponse> {
+  return apiFetch<BatchResponse>("/api/sessions/batch", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+// ── Projects ──────────────────────────────────────────────────────────
+
+export async function listProjects(): Promise<ProjectSummary[]> {
+  return apiFetch<ProjectSummary[]>("/api/projects");
+}
+
+export async function getProjectActivity(
+  days?: number,
+): Promise<ProjectActivity[]> {
+  const qs = days ? `?days=${days}` : "";
+  return apiFetch<ProjectActivity[]>(`/api/projects/activity${qs}`);
+}

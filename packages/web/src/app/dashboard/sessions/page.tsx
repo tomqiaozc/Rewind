@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Clock, MessageSquare, Star, Zap } from "lucide-react";
-import { listSessions, getSessionFilters } from "@/lib/api";
+import { listSessions, getSessionFilters, toggleStar } from "@/lib/api";
 import type { SessionListItem, FilterValues } from "@/lib/types";
 import { SOURCE_LABELS } from "@/lib/types";
 import {
@@ -56,6 +56,30 @@ export default function SessionsPage() {
       .then(setFilters)
       .catch(() => {});
   }, []);
+
+  const handleToggleStar = useCallback(
+    async (e: React.MouseEvent, sessionId: string, currentStarred: boolean) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // Optimistic update
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === sessionId ? { ...s, is_starred: !currentStarred } : s,
+        ),
+      );
+      try {
+        await toggleStar(sessionId, !currentStarred);
+      } catch {
+        // Rollback on error
+        setSessions((prev) =>
+          prev.map((s) =>
+            s.id === sessionId ? { ...s, is_starred: currentStarred } : s,
+          ),
+        );
+      }
+    },
+    [],
+  );
 
   const totalPages = Math.ceil(total / pageSize);
 
@@ -137,9 +161,24 @@ export default function SessionsPage() {
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  {session.is_starred && (
-                    <Star className="size-4 fill-yellow-400 text-yellow-400" />
-                  )}
+                  <button
+                    type="button"
+                    onClick={(e) =>
+                      handleToggleStar(e, session.id, session.is_starred)
+                    }
+                    className="shrink-0"
+                    aria-label={
+                      session.is_starred ? "Unstar session" : "Star session"
+                    }
+                  >
+                    <Star
+                      className={`size-4 ${
+                        session.is_starred
+                          ? "fill-yellow-400 text-yellow-400"
+                          : "text-muted-foreground/40 hover:text-yellow-400"
+                      }`}
+                    />
+                  </button>
                   <p className="truncate font-medium">
                     {session.title || session.session_key}
                   </p>
@@ -148,6 +187,15 @@ export default function SessionsPage() {
                   <Badge variant="secondary" className="text-xs">
                     {SOURCE_LABELS[session.source] || session.source}
                   </Badge>
+                  {session.tags?.map((tag) => (
+                    <span
+                      key={tag.id}
+                      className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-white"
+                      style={{ backgroundColor: tag.color }}
+                    >
+                      {tag.name}
+                    </span>
+                  ))}
                   {session.project_name && (
                     <span className="truncate">{session.project_name}</span>
                   )}
