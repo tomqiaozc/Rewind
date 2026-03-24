@@ -13,3 +13,31 @@ skills/
 # Environment
 .env
 .env.local
+.env.production
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+venv/
+.venv/
+
+# Node.js
+node_modules/
+.next/
+out/
+
+# Planning files (session-specific)
+task_plan.md
+findings.md
+progress.md
