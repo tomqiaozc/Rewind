@@ -1,0 +1,15 @@
+# Local skills (not project code)
+skills/
+
+# OS files
+.DS_Store
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
