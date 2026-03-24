@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import List, Optional
 
 from sqlalchemy import BigInteger, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
@@ -21,20 +22,20 @@ class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    name: Mapped[str | None] = mapped_column(Text)
+    name: Mapped[Optional[str]] = mapped_column(Text)
     email: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
-    email_verified: Mapped[datetime | None] = mapped_column()
-    image: Mapped[str | None] = mapped_column(Text)
+    email_verified: Mapped[Optional[datetime]] = mapped_column()
+    image: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
     # Relationships
-    accounts: Mapped[list[Account]] = relationship(
+    accounts: Mapped[List[Account]] = relationship(
         back_populates="user", cascade="all, delete"
     )
-    api_keys: Mapped[list[ApiKey]] = relationship(
+    api_keys: Mapped[List[ApiKey]] = relationship(
         back_populates="user", cascade="all, delete"
     )
 
@@ -51,12 +52,12 @@ class Account(Base):
     provider: Mapped[str] = mapped_column(Text, nullable=False)
     provider_account_id: Mapped[str] = mapped_column(Text, nullable=False)
     type: Mapped[str] = mapped_column(Text, nullable=False)
-    access_token: Mapped[str | None] = mapped_column(Text)
-    refresh_token: Mapped[str | None] = mapped_column(Text)
-    expires_at: Mapped[int | None] = mapped_column(BigInteger)
-    token_type: Mapped[str | None] = mapped_column(String(50))
-    scope: Mapped[str | None] = mapped_column(Text)
-    id_token: Mapped[str | None] = mapped_column(Text)
+    access_token: Mapped[Optional[str]] = mapped_column(Text)
+    refresh_token: Mapped[Optional[str]] = mapped_column(Text)
+    expires_at: Mapped[Optional[int]] = mapped_column(BigInteger)
+    token_type: Mapped[Optional[str]] = mapped_column(String(50))
+    scope: Mapped[Optional[str]] = mapped_column(Text)
+    id_token: Mapped[Optional[str]] = mapped_column(Text)
 
     __table_args__ = (UniqueConstraint("provider", "provider_account_id"),)
 
@@ -74,9 +75,9 @@ class ApiKey(Base):
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     key_hash: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
-    device_name: Mapped[str | None] = mapped_column(Text)
+    device_name: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
-    last_used_at: Mapped[datetime | None] = mapped_column()
+    last_used_at: Mapped[Optional[datetime]] = mapped_column()
 
     # Relationships
     user: Mapped[User] = relationship(back_populates="api_keys")

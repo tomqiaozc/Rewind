@@ -41,6 +41,12 @@ line-length = 100
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "A", "SIM", "TCH"]
 
+[tool.ruff.lint.per-file-ignores]
+# Pydantic models need Optional[] and runtime datetime on Python 3.9
+"src/core/types.py" = ["UP045", "TCH003"]
+# SQLAlchemy models need runtime type annotations (Optional[], List[]) on Python 3.9
+"src/models/*.py" = ["UP045", "UP006", "UP035"]
+
 [tool.mypy]
 python_version = "3.9"
 strict = true
