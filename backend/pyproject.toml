@@ -15,6 +15,8 @@ dependencies = [
     "azure-storage-blob>=12.24.0",
     "python-multipart>=0.0.18",
     "httpx>=0.28.0",
+    "slowapi>=0.1.9",
+    "gunicorn>=22.0.0",
 ]
 
 [project.optional-dependencies]
@@ -50,6 +52,8 @@ select = ["E", "F", "W", "I", "N", "UP", "B", "A", "SIM", "TCH"]
 "src/models/*.py" = ["UP045", "UP006", "UP035"]
 # FastAPI route files need Optional[] for runtime parameter annotation on Python 3.9
 "src/api/*.py" = ["UP045", "TCH003"]
+# main.py uses runtime type annotations for FastAPI dependency injection
+"src/main.py" = ["TCH002"]
 
 [tool.mypy]
 python_version = "3.9"

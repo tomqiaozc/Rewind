@@ -32,6 +32,16 @@ class Settings(BaseSettings):
     max_metadata_size_bytes: int = 2_097_152  # 2MB
     max_batch_size: int = 50
 
+    # Rate limiting
+    api_rate_limit: str = "100/minute"  # slowapi format
+
+    # Database pool
+    db_pool_size: int = 5
+    db_max_overflow: int = 10
+
+    # Trusted proxies (for X-Forwarded-For)
+    trusted_host: str = ""  # set to production domain in prod
+
     # Logging
     log_level: str = "INFO"
 

@@ -1,0 +1,105 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ghcr.io/${{ github.repository }}/backend
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository }}/frontend
+
+jobs:
+  build-backend:
+    name: Build Backend Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+            ${{ env.BACKEND_IMAGE }}:latest
+
+  build-frontend:
+    name: Build Frontend Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: packages/web
+          push: true
+          tags: |
+            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+            ${{ env.FRONTEND_IMAGE }}:latest
+
+  deploy:
+    name: Deploy to Azure
+    needs: [build-backend, build-frontend]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy Backend
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.BACKEND_APP_NAME }}
+          images: ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+
+      - name: Deploy Frontend
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.FRONTEND_APP_NAME }}
+          images: ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+
+      - name: Run database migrations
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            az webapp ssh --resource-group ${{ vars.RESOURCE_GROUP }} \
+              --name ${{ vars.BACKEND_APP_NAME }} \
+              --command "cd /app && alembic upgrade head"
+
+      - name: Smoke test
+        run: |
+          sleep 30
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://${{ vars.BACKEND_APP_NAME }}.azurewebsites.net/api/health")
+          if [ "$STATUS" != "200" ]; then
+            echo "Health check failed with status $STATUS"
+            exit 1
+          fi
+          echo "Health check passed"

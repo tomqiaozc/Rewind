@@ -14,6 +14,7 @@ skills/
 .env
 .env.local
 .env.production
+!.env.example
 
 # Python
 __pycache__/
@@ -41,3 +42,6 @@ out/
 task_plan.md
 findings.md
 progress.md
+
+# Superpowers planning files
+docs/superpowers/

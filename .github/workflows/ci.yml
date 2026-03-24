@@ -8,8 +8,11 @@ on:
 
 jobs:
   backend:
-    name: Backend (Python)
+    name: Backend (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.12"]
     defaults:
       run:
         working-directory: backend
@@ -35,7 +38,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: pip install -e ".[dev]"
