@@ -4,6 +4,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.api.ingest import router as ingest_router
 from src.config import settings
 
 app = FastAPI(
@@ -20,6 +21,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Register routers
+app.include_router(ingest_router)
 
 
 @app.get("/api/health")
