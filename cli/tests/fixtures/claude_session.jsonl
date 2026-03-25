@@ -1,0 +1,5 @@
+{"type":"summary","summary":"Test session","leafTitle":"Test project","model":"claude-sonnet-4-20250514"}
+{"type":"human","message":{"role":"user","content":"Hello, how are you?"},"timestamp":"2024-06-01T10:00:00Z"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"I'm doing well! How can I help you?"}],"model":"claude-sonnet-4-20250514","usage":{"input_tokens":10,"output_tokens":15}},"timestamp":"2024-06-01T10:00:05Z"}
+{"type":"human","message":{"role":"user","content":"Can you check this file?"},"timestamp":"2024-06-01T10:01:00Z"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"tool_1","name":"Read","input":{"file_path":"test.py"}},{"type":"text","text":"Here's what I found in the file."}],"model":"claude-sonnet-4-20250514","usage":{"input_tokens":20,"output_tokens":30}},"timestamp":"2024-06-01T10:01:10Z"}
