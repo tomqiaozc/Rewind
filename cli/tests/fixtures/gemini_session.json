@@ -1,0 +1,12 @@
+{
+  "id": "session-abc123",
+  "projectHash": "hash_xyz",
+  "projectName": "/home/user/myproject",
+  "messages": [
+    {"role": "user", "content": "What does this code do?", "type": "message", "createdAt": "2024-06-01T10:00:00Z"},
+    {"role": "info", "content": "System info", "type": "info", "createdAt": "2024-06-01T10:00:01Z"},
+    {"role": "model", "content": "This code implements a sorting algorithm.", "type": "message", "createdAt": "2024-06-01T10:00:05Z", "metadata": {"inputTokens": 15, "outputTokens": 20, "model": "gemini-2.0-flash"}},
+    {"role": "user", "content": "Can you optimize it?", "type": "message", "createdAt": "2024-06-01T10:01:00Z"},
+    {"role": "model", "content": "Here's an optimized version.", "type": "message", "createdAt": "2024-06-01T10:01:10Z", "metadata": {"inputTokens": 25, "outputTokens": 35, "model": "gemini-2.0-flash"}}
+  ]
+}
