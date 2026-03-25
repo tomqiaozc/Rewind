@@ -37,6 +37,14 @@ line-length = 100
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "A", "SIM", "TCH"]
 
+[tool.ruff.lint.per-file-ignores]
+"src/core/*.py" = ["UP045", "TCH003"]
+"src/parsers/*.py" = ["UP045", "TCH003"]
+"src/drivers/*.py" = ["UP045", "TCH003"]
+"src/upload/*.py" = ["UP045", "TCH003"]
+"src/config/*.py" = ["UP045", "TCH003"]
+"src/commands/*.py" = ["UP045", "TCH003"]
+
 [tool.mypy]
 python_version = "3.9"
 strict = true

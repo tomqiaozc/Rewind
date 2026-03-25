@@ -3,11 +3,19 @@ from __future__ import annotations
 
 import typer
 
+from src.commands.login import login
+from src.commands.status import status
+from src.commands.sync import sync
+
 app = typer.Typer(
     name="rewind",
     help="Rewind — sync and manage your AI coding sessions.",
     no_args_is_help=True,
 )
+
+app.command()(login)
+app.command()(sync)
+app.command()(status)
 
 
 @app.callback(invoke_without_command=True)
