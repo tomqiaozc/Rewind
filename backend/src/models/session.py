@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
-from sqlalchemy import BigInteger, Boolean, ForeignKey, Integer, Text, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, Computed, DateTime, ForeignKey, Integer, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import TSVECTOR, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -24,10 +24,10 @@ class Session(Base):
     source: Mapped[str] = mapped_column(Text, nullable=False)
 
     # Temporal
-    started_at: Mapped[Optional[datetime]] = mapped_column()
-    last_message_at: Mapped[Optional[datetime]] = mapped_column()
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_message_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     duration_seconds: Mapped[Optional[int]] = mapped_column(Integer)
-    snapshot_at: Mapped[datetime] = mapped_column(nullable=False)
+    snapshot_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     # Counts
     user_messages: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
@@ -57,15 +57,21 @@ class Session(Base):
     raw_hash: Mapped[Optional[str]] = mapped_column(Text)
     parser_revision: Mapped[int] = mapped_column(Integer, nullable=False)
     schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
-    ingested_at: Mapped[Optional[datetime]] = mapped_column()
+    ingested_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
     # User organization
     is_starred: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
-    deleted_at: Mapped[Optional[datetime]] = mapped_column()
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
     # Timestamps
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
     __table_args__ = (UniqueConstraint("user_id", "session_key"),)
 
@@ -95,8 +101,8 @@ class Message(Base):
     output_tokens: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
 
     # Timing
-    started_at: Mapped[Optional[datetime]] = mapped_column()
-    ended_at: Mapped[Optional[datetime]] = mapped_column()
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
     __table_args__ = (UniqueConstraint("session_id", "ordinal"),)
 
@@ -126,8 +132,10 @@ class MessageChunk(Base):
     tool_context: Mapped[Optional[str]] = mapped_column(Text)
 
     # FTS: tsvector column — GENERATED ALWAYS AS is handled in the migration,
-    # not in the model. This is a plain column for SQLAlchemy awareness.
-    search_vector: Mapped[Optional[str]] = mapped_column(TSVECTOR)
+    # not in the model. Mark as Computed so SQLAlchemy excludes it from INSERT/UPDATE.
+    search_vector: Mapped[Optional[str]] = mapped_column(
+        TSVECTOR, Computed("to_tsvector('english', content)", persisted=True), nullable=True
+    )
 
     __table_args__ = (UniqueConstraint("message_id", "chunk_index"),)
 

@@ -85,20 +85,55 @@ make install
 make up
 ```
 
-### 3. Configure environment
+### 3. Create the blob storage container
+
+Azurite doesn't auto-create containers. Run this once after first `make up`:
+
+```bash
+python3 -c "
+from azure.storage.blob import BlobServiceClient
+c = BlobServiceClient.from_connection_string(
+    'DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;'
+    'AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;'
+    'BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;'
+)
+c.create_container('sessions')
+print('Container created')
+"
+```
+
+### 4. Configure environment
 
 ```bash
 cp .env.example .env
 # Edit .env if needed (defaults work for local dev)
 ```
 
-### 4. Run database migrations
+### 5. Run database migrations
 
 ```bash
 make migrate
 ```
 
-### 5. Start the backend
+### 6. Create a dev user and API key
+
+```bash
+docker exec -i rewind-postgres-1 psql -U rewind -d rewind <<'SQL'
+INSERT INTO users (id, email, name)
+VALUES ('00000000-0000-0000-0000-000000000001', 'dev@localhost', 'Dev User')
+ON CONFLICT (email) DO NOTHING;
+
+INSERT INTO api_keys (id, user_id, key_hash, device_name)
+VALUES (
+  '00000000-0000-0000-0000-000000000002',
+  '00000000-0000-0000-0000-000000000001',
+  encode(sha256('rw_dev_local_key_1234567890abcdef1234567890abcdef'::bytea), 'hex'),
+  'local-dev'
+) ON CONFLICT (key_hash) DO NOTHING;
+SQL
+```
+
+### 7. Start the backend
 
 ```bash
 make backend-dev
@@ -106,14 +141,22 @@ make backend-dev
 # Health check: http://localhost:8000/api/health
 ```
 
-### 6. Start the frontend (in a separate terminal)
+### 8. Configure and start the frontend (in a separate terminal)
+
+Create `packages/web/.env.local` with the dev API key:
+
+```bash
+echo "NEXT_PUBLIC_API_KEY=rw_dev_local_key_1234567890abcdef1234567890abcdef" > packages/web/.env.local
+```
+
+Then start the frontend:
 
 ```bash
 make web-dev
 # Dashboard at http://localhost:3000
 ```
 
-### 7. Install and use the CLI
+### 9. Install and use the CLI
 
 ```bash
 cd cli && pip install -e .

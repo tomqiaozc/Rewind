@@ -68,7 +68,7 @@ async def batch_metadata_upsert(
     return BatchIngestResponse(ingested=ingested, skipped=skipped)
 
 
-@router.put("/content/{session_key}/canonical")
+@router.put("/content/{session_key:path}/canonical")
 async def upload_canonical(
     session_key: str,
     request: Request,
@@ -117,7 +117,7 @@ async def upload_canonical(
     return result
 
 
-@router.put("/content/{session_key}/raw")
+@router.put("/content/{session_key:path}/raw")
 async def upload_raw_proxy(
     session_key: str,
     request: Request,
@@ -171,7 +171,7 @@ async def upload_raw_proxy(
     return result
 
 
-@router.post("/content/{session_key}/raw/confirm")
+@router.post("/content/{session_key:path}/raw/confirm")
 async def confirm_raw(
     session_key: str,
     body: RawConfirmRequest,

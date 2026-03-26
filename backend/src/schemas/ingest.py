@@ -22,9 +22,9 @@ class SessionSnapshot(BaseModel):
     user_messages: int = 0
     assistant_messages: int = 0
     total_messages: int = 0
-    total_input_tokens: int = 0
-    total_output_tokens: int = 0
-    total_cached_tokens: int = 0
+    total_input_tokens: Optional[int] = 0
+    total_output_tokens: Optional[int] = 0
+    total_cached_tokens: Optional[int] = 0
     project_ref: Optional[str] = None
     project_name: Optional[str] = None
     model: Optional[str] = None

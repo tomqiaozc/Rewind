@@ -130,10 +130,10 @@ async def _upload_all(
         fail_count = 0
 
         for r in results:
-            metadata = r.canonical.model_dump()
+            metadata = r.canonical.model_dump(mode="json")
             metadata.pop("messages", None)
-            canonical_data = r.canonical.model_dump()
-            raw_data = r.raw.model_dump()
+            canonical_data = r.canonical.model_dump(mode="json")
+            raw_data = r.raw.model_dump(mode="json")
             raw_hash = r.canonical.raw_hash
 
             ok = await engine.upload_session(
