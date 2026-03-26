@@ -4,6 +4,7 @@ Blob layout:
     {user_id}/{session_key}/canonical.json.gz        # overwritten on re-ingest
     {user_id}/{session_key}/raw/{raw_hash}.json.gz   # immutable, content-addressed
 """
+
 from __future__ import annotations
 
 import logging
@@ -60,9 +61,7 @@ class BlobStorageService:
     # Public async operations
     # ------------------------------------------------------------------
 
-    async def upload_canonical(
-        self, user_id: str, session_key: str, data: bytes
-    ) -> str:
+    async def upload_canonical(self, user_id: str, session_key: str, data: bytes) -> str:
         """Upload canonical content. Returns blob key. Overwrites existing."""
         key = self._canonical_key(user_id, session_key)
         container = self._get_container_client()
@@ -70,9 +69,7 @@ class BlobStorageService:
         logger.info("Uploaded canonical blob: %s (%d bytes)", key, len(data))
         return key
 
-    async def upload_raw(
-        self, user_id: str, session_key: str, raw_hash: str, data: bytes
-    ) -> str:
+    async def upload_raw(self, user_id: str, session_key: str, raw_hash: str, data: bytes) -> str:
         """Upload raw content. Returns blob key. Content-addressed, never overwritten."""
         key = self._raw_key(user_id, session_key, raw_hash)
         container = self._get_container_client()
@@ -111,9 +108,7 @@ class BlobStorageService:
         """Generate a SAS URL for direct access to a blob."""
         # Parse account name and key from connection string
         parts = dict(
-            part.split("=", 1)
-            for part in self._connection_string.split(";")
-            if "=" in part
+            part.split("=", 1) for part in self._connection_string.split(";") if "=" in part
         )
         account_name = parts.get("AccountName", "")
         account_key = parts.get("AccountKey", "")
@@ -128,9 +123,7 @@ class BlobStorageService:
         )
 
         # Build the URL from the blob endpoint or default
-        blob_endpoint = parts.get(
-            "BlobEndpoint", f"https://{account_name}.blob.core.windows.net"
-        )
+        blob_endpoint = parts.get("BlobEndpoint", f"https://{account_name}.blob.core.windows.net")
         return f"{blob_endpoint}/{self._container_name}/{key}?{sas_token}"
 
     async def get_blob_size(self, key: str) -> int:

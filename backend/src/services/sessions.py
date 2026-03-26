@@ -1,4 +1,5 @@
 """Session query service — listing, detail, and filter retrieval."""
+
 from __future__ import annotations
 
 import uuid
@@ -147,9 +148,7 @@ async def get_session_detail(
     """
 
     # -- fetch session -----------------------------------------------------
-    session_stmt = select(Session).where(
-        and_(Session.id == session_id, Session.user_id == user_id)
-    )
+    session_stmt = select(Session).where(and_(Session.id == session_id, Session.user_id == user_id))
     session: Session | None = (await db.execute(session_stmt)).scalar_one_or_none()
 
     if session is None:
@@ -185,9 +184,7 @@ async def get_session_detail(
         msg = entry["msg"]
         # Sort chunks by index to be safe (query already orders, but dict
         # grouping could theoretically reorder within the same ordinal).
-        sorted_chunks: list[MessageChunk] = sorted(
-            entry["chunks"], key=lambda c: c.chunk_index
-        )
+        sorted_chunks: list[MessageChunk] = sorted(entry["chunks"], key=lambda c: c.chunk_index)
         content = "".join(c.content for c in sorted_chunks)
 
         assembled.append(
@@ -227,12 +224,7 @@ async def get_session_filters(
 
     base_where = and_(Session.user_id == user_id, Session.deleted_at.is_(None))
 
-    sources_stmt = (
-        select(Session.source)
-        .where(base_where)
-        .distinct()
-        .order_by(Session.source)
-    )
+    sources_stmt = select(Session.source).where(base_where).distinct().order_by(Session.source)
     projects_stmt = (
         select(Session.project_name)
         .where(and_(base_where, Session.project_name.isnot(None)))
@@ -269,9 +261,7 @@ async def star_session(
     is_starred: bool,
 ) -> bool:
     """Set is_starred for a session. Returns True if found."""
-    stmt = select(Session).where(
-        and_(Session.id == session_id, Session.user_id == user_id)
-    )
+    stmt = select(Session).where(and_(Session.id == session_id, Session.user_id == user_id))
     session: Session | None = (await db.execute(stmt)).scalar_one_or_none()
     if session is None:
         return False

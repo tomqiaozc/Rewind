@@ -3,6 +3,7 @@
 Projects are virtual groupings — there is no projects table.  All data
 is derived from the ``sessions`` table by grouping on ``project_name``.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -43,15 +44,9 @@ async def list_projects(
             Session.project_name,
             func.count(Session.id).label("session_count"),
             func.coalesce(func.sum(Session.total_messages), 0).label("total_messages"),
-            func.coalesce(func.sum(Session.total_input_tokens), 0).label(
-                "total_input_tokens"
-            ),
-            func.coalesce(func.sum(Session.total_output_tokens), 0).label(
-                "total_output_tokens"
-            ),
-            func.coalesce(func.sum(Session.duration_seconds), 0).label(
-                "total_duration_seconds"
-            ),
+            func.coalesce(func.sum(Session.total_input_tokens), 0).label("total_input_tokens"),
+            func.coalesce(func.sum(Session.total_output_tokens), 0).label("total_output_tokens"),
+            func.coalesce(func.sum(Session.duration_seconds), 0).label("total_duration_seconds"),
             func.max(Session.started_at).label("last_session_at"),
         )
         .where(not_deleted)

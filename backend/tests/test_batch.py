@@ -1,4 +1,5 @@
 """Tests for star, trash, restore, batch operations, and session-tag APIs."""
+
 from __future__ import annotations
 
 import uuid
@@ -142,9 +143,7 @@ async def client(db_session: AsyncSession, user: User, engine):
     app.dependency_overrides[get_db] = _override_db
     app.dependency_overrides[get_current_user] = _override_user
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
     app.dependency_overrides.clear()
@@ -156,9 +155,7 @@ async def client(db_session: AsyncSession, user: User, engine):
 
 
 class TestStarSession:
-    async def test_star_session(
-        self, client: AsyncClient, sample_sessions: list[Session]
-    ) -> None:
+    async def test_star_session(self, client: AsyncClient, sample_sessions: list[Session]) -> None:
         session_id = sample_sessions[0].id
         resp = await client.patch(
             f"/api/sessions/{session_id}/star",
@@ -199,9 +196,7 @@ class TestStarSession:
 
 
 class TestTrashRestore:
-    async def test_trash_session(
-        self, client: AsyncClient, sample_sessions: list[Session]
-    ) -> None:
+    async def test_trash_session(self, client: AsyncClient, sample_sessions: list[Session]) -> None:
         session_id = sample_sessions[0].id
         resp = await client.post(f"/api/sessions/{session_id}/trash")
         assert resp.status_code == 204
@@ -242,9 +237,7 @@ class TestTrashRestore:
         resp = await client.delete(f"/api/sessions/{session_id}/trash")
         assert resp.status_code == 404
 
-    async def test_list_trash(
-        self, client: AsyncClient, sample_sessions: list[Session]
-    ) -> None:
+    async def test_list_trash(self, client: AsyncClient, sample_sessions: list[Session]) -> None:
         # Trash two sessions
         await client.post(f"/api/sessions/{sample_sessions[0].id}/trash")
         await client.post(f"/api/sessions/{sample_sessions[1].id}/trash")
@@ -268,9 +261,7 @@ class TestTrashRestore:
 
 
 class TestBatchOperation:
-    async def test_batch_star(
-        self, client: AsyncClient, sample_sessions: list[Session]
-    ) -> None:
+    async def test_batch_star(self, client: AsyncClient, sample_sessions: list[Session]) -> None:
         ids = [str(s.id) for s in sample_sessions[:2]]
         resp = await client.post(
             "/api/sessions/batch",
@@ -279,9 +270,7 @@ class TestBatchOperation:
         assert resp.status_code == 200
         assert resp.json()["affected"] == 2
 
-    async def test_batch_trash(
-        self, client: AsyncClient, sample_sessions: list[Session]
-    ) -> None:
+    async def test_batch_trash(self, client: AsyncClient, sample_sessions: list[Session]) -> None:
         ids = [str(s.id) for s in sample_sessions]
         resp = await client.post(
             "/api/sessions/batch",
@@ -294,9 +283,7 @@ class TestBatchOperation:
         list_resp = await client.get("/api/sessions")
         assert list_resp.json()["total"] == 0
 
-    async def test_batch_restore(
-        self, client: AsyncClient, sample_sessions: list[Session]
-    ) -> None:
+    async def test_batch_restore(self, client: AsyncClient, sample_sessions: list[Session]) -> None:
         ids = [str(s.id) for s in sample_sessions[:2]]
         # Trash first
         await client.post(
@@ -335,9 +322,7 @@ class TestTagAssociation:
         sample_tag: Tag,
     ) -> None:
         session_id = sample_sessions[0].id
-        resp = await client.put(
-            f"/api/sessions/{session_id}/tags/{sample_tag.id}"
-        )
+        resp = await client.put(f"/api/sessions/{session_id}/tags/{sample_tag.id}")
         assert resp.status_code == 204
 
     async def test_remove_tag_from_session_via_api(
@@ -350,9 +335,7 @@ class TestTagAssociation:
         # Add first
         await client.put(f"/api/sessions/{session_id}/tags/{sample_tag.id}")
         # Remove
-        resp = await client.delete(
-            f"/api/sessions/{session_id}/tags/{sample_tag.id}"
-        )
+        resp = await client.delete(f"/api/sessions/{session_id}/tags/{sample_tag.id}")
         assert resp.status_code == 204
 
     async def test_add_tag_nonexistent(
@@ -362,7 +345,5 @@ class TestTagAssociation:
     ) -> None:
         session_id = sample_sessions[0].id
         fake_tag_id = uuid.uuid4()
-        resp = await client.put(
-            f"/api/sessions/{session_id}/tags/{fake_tag_id}"
-        )
+        resp = await client.put(f"/api/sessions/{session_id}/tags/{fake_tag_id}")
         assert resp.status_code == 404

@@ -1,4 +1,5 @@
 """Full-text search API route."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
@@ -28,9 +29,7 @@ async def search_sessions(
     db: AsyncSession = Depends(get_db),  # noqa: B008
 ) -> SearchResponse:
     """Full-text search across session message chunks."""
-    results, total = await search.search_sessions(
-        db, user.id, q, source, limit, offset
-    )
+    results, total = await search.search_sessions(db, user.id, q, source, limit, offset)
     return SearchResponse(
         results=[SearchResult(**r) for r in results],
         total=total,

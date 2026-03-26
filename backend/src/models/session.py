@@ -1,4 +1,5 @@
 """SQLAlchemy models for sessions, messages, and message chunks."""
+
 from __future__ import annotations
 
 import uuid
@@ -15,9 +16,7 @@ from src.models.base import Base
 class Session(Base):
     __tablename__ = "sessions"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
@@ -61,31 +60,23 @@ class Session(Base):
     ingested_at: Mapped[Optional[datetime]] = mapped_column()
 
     # User organization
-    is_starred: Mapped[bool] = mapped_column(
-        Boolean, default=False, server_default="false"
-    )
+    is_starred: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     deleted_at: Mapped[Optional[datetime]] = mapped_column()
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow, onupdate=datetime.utcnow
-    )
+    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
 
     __table_args__ = (UniqueConstraint("user_id", "session_key"),)
 
     # Relationships
-    messages: Mapped[List[Message]] = relationship(
-        back_populates="session", cascade="all, delete"
-    )
+    messages: Mapped[List[Message]] = relationship(back_populates="session", cascade="all, delete")
 
 
 class Message(Base):
     __tablename__ = "messages"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     session_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("sessions.id", ondelete="CASCADE"),
@@ -119,9 +110,7 @@ class Message(Base):
 class MessageChunk(Base):
     __tablename__ = "message_chunks"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     message_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("messages.id", ondelete="CASCADE"),

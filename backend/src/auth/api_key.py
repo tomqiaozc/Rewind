@@ -1,4 +1,5 @@
 """API key generation, hashing, and verification."""
+
 from __future__ import annotations
 
 import hashlib
@@ -61,9 +62,7 @@ async def verify_api_key(db: AsyncSession, key: str) -> User | None:
     """
     key_hash = hash_api_key(key)
     result = await db.execute(
-        select(ApiKey)
-        .options(selectinload(ApiKey.user))
-        .where(ApiKey.key_hash == key_hash)
+        select(ApiKey).options(selectinload(ApiKey.user)).where(ApiKey.key_hash == key_hash)
     )
     api_key = result.scalar_one_or_none()
     if api_key is None:

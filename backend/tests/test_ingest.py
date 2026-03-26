@@ -1,4 +1,5 @@
 """Tests for the ingest service and API routes."""
+
 from __future__ import annotations
 
 import gzip

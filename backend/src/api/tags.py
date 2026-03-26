@@ -1,4 +1,5 @@
 """Tag CRUD API routes."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -55,9 +56,7 @@ async def update_tag(
 ) -> TagResponse:
     """Update a tag's name and/or color."""
     try:
-        result = await tag_service.update_tag(
-            db, user.id, tag_id, name=body.name, color=body.color
-        )
+        result = await tag_service.update_tag(db, user.id, tag_id, name=body.name, color=body.color)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

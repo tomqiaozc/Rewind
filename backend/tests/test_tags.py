@@ -1,4 +1,5 @@
 """Tests for the tags service and API routes."""
+
 from __future__ import annotations
 
 import uuid
@@ -128,9 +129,7 @@ async def client(session_factory, user: User):
     app.dependency_overrides[get_db] = _override_db
     app.dependency_overrides[get_current_user] = _override_user
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
     app.dependency_overrides.clear()
@@ -144,9 +143,7 @@ async def client(session_factory, user: User):
 class TestCreateTag:
     """Tests for the create_tag service function."""
 
-    async def test_create_tag_success(
-        self, db_session: AsyncSession, user: User
-    ) -> None:
+    async def test_create_tag_success(self, db_session: AsyncSession, user: User) -> None:
         result = await create_tag(db_session, user.id, "bugfix", "#ff0000")
         assert result["name"] == "bugfix"
         assert result["color"] == "#ff0000"
@@ -154,9 +151,7 @@ class TestCreateTag:
         assert result["id"] is not None
         assert result["created_at"] is not None
 
-    async def test_create_tag_default_color(
-        self, db_session: AsyncSession, user: User
-    ) -> None:
+    async def test_create_tag_default_color(self, db_session: AsyncSession, user: User) -> None:
         result = await create_tag(db_session, user.id, "feature")
         assert result["color"] == "#6b7280"
 
@@ -176,15 +171,11 @@ class TestCreateTag:
 class TestListTags:
     """Tests for the list_tags service function."""
 
-    async def test_list_tags_empty(
-        self, db_session: AsyncSession, user: User
-    ) -> None:
+    async def test_list_tags_empty(self, db_session: AsyncSession, user: User) -> None:
         items = await list_tags(db_session, user.id)
         assert items == []
 
-    async def test_list_tags_returns_all(
-        self, db_session: AsyncSession, user: User
-    ) -> None:
+    async def test_list_tags_returns_all(self, db_session: AsyncSession, user: User) -> None:
         await create_tag(db_session, user.id, "alpha", "#111111")
         await create_tag(db_session, user.id, "beta", "#222222")
         await create_tag(db_session, user.id, "gamma", "#333333")
@@ -207,9 +198,7 @@ class TestListTags:
         counted = [t for t in items if t["name"] == "counted"][0]
         assert counted["session_count"] == 1
 
-    async def test_list_tags_isolation(
-        self, db_session: AsyncSession, user: User
-    ) -> None:
+    async def test_list_tags_isolation(self, db_session: AsyncSession, user: User) -> None:
         """Tags from one user should not appear for another user."""
         await create_tag(db_session, user.id, "my-tag")
 
@@ -229,9 +218,7 @@ class TestListTags:
 class TestUpdateTag:
     """Tests for the update_tag service function."""
 
-    async def test_update_tag_name(
-        self, db_session: AsyncSession, user: User
-    ) -> None:
+    async def test_update_tag_name(self, db_session: AsyncSession, user: User) -> None:
         tag = await create_tag(db_session, user.id, "old-name")
         tag_id = uuid.UUID(tag["id"])
 
@@ -239,9 +226,7 @@ class TestUpdateTag:
         assert result is not None
         assert result["name"] == "new-name"
 
-    async def test_update_tag_color(
-        self, db_session: AsyncSession, user: User
-    ) -> None:
+    async def test_update_tag_color(self, db_session: AsyncSession, user: User) -> None:
         tag = await create_tag(db_session, user.id, "colorful")
         tag_id = uuid.UUID(tag["id"])
 
@@ -260,9 +245,7 @@ class TestUpdateTag:
         with pytest.raises(ValueError, match="already exists"):
             await update_tag(db_session, user.id, tag_id, name="existing")
 
-    async def test_update_tag_not_found(
-        self, db_session: AsyncSession, user: User
-    ) -> None:
+    async def test_update_tag_not_found(self, db_session: AsyncSession, user: User) -> None:
         result = await update_tag(db_session, user.id, uuid.uuid4(), name="nope")
         assert result is None
 
@@ -286,9 +269,7 @@ class TestUpdateTag:
 class TestDeleteTag:
     """Tests for the delete_tag service function."""
 
-    async def test_delete_tag_success(
-        self, db_session: AsyncSession, user: User
-    ) -> None:
+    async def test_delete_tag_success(self, db_session: AsyncSession, user: User) -> None:
         tag = await create_tag(db_session, user.id, "to-delete")
         tag_id = uuid.UUID(tag["id"])
 
@@ -299,9 +280,7 @@ class TestDeleteTag:
         items = await list_tags(db_session, user.id)
         assert len(items) == 0
 
-    async def test_delete_tag_not_found(
-        self, db_session: AsyncSession, user: User
-    ) -> None:
+    async def test_delete_tag_not_found(self, db_session: AsyncSession, user: User) -> None:
         deleted = await delete_tag(db_session, user.id, uuid.uuid4())
         assert deleted is False
 
@@ -318,9 +297,7 @@ class TestDeleteTag:
         # Verify association is also gone
         from sqlalchemy import select
 
-        result = await db_session.execute(
-            select(SessionTag).where(SessionTag.tag_id == tag_id)
-        )
+        result = await db_session.execute(select(SessionTag).where(SessionTag.tag_id == tag_id))
         assert result.scalar_one_or_none() is None
 
 
@@ -338,9 +315,7 @@ class TestSessionTagAssociation:
         tag = await create_tag(db_session, user.id, "assoc-tag")
         tag_id = uuid.UUID(tag["id"])
 
-        result = await add_tag_to_session(
-            db_session, user.id, sample_session.id, tag_id
-        )
+        result = await add_tag_to_session(db_session, user.id, sample_session.id, tag_id)
         assert result is True
 
     async def test_add_tag_to_session_idempotent(
@@ -350,9 +325,7 @@ class TestSessionTagAssociation:
         tag_id = uuid.UUID(tag["id"])
 
         await add_tag_to_session(db_session, user.id, sample_session.id, tag_id)
-        result = await add_tag_to_session(
-            db_session, user.id, sample_session.id, tag_id
-        )
+        result = await add_tag_to_session(db_session, user.id, sample_session.id, tag_id)
         assert result is True  # No error, idempotent
 
     async def test_add_tag_wrong_user(
@@ -362,9 +335,7 @@ class TestSessionTagAssociation:
         tag_id = uuid.UUID(tag["id"])
 
         other_user_id = uuid.uuid4()
-        result = await add_tag_to_session(
-            db_session, other_user_id, sample_session.id, tag_id
-        )
+        result = await add_tag_to_session(db_session, other_user_id, sample_session.id, tag_id)
         assert result is False
 
     async def test_remove_tag_from_session(
@@ -374,9 +345,7 @@ class TestSessionTagAssociation:
         tag_id = uuid.UUID(tag["id"])
 
         await add_tag_to_session(db_session, user.id, sample_session.id, tag_id)
-        result = await remove_tag_from_session(
-            db_session, user.id, sample_session.id, tag_id
-        )
+        result = await remove_tag_from_session(db_session, user.id, sample_session.id, tag_id)
         assert result is True
 
     async def test_remove_nonexistent_association(
@@ -385,9 +354,7 @@ class TestSessionTagAssociation:
         tag = await create_tag(db_session, user.id, "no-assoc-tag")
         tag_id = uuid.UUID(tag["id"])
 
-        result = await remove_tag_from_session(
-            db_session, user.id, sample_session.id, tag_id
-        )
+        result = await remove_tag_from_session(db_session, user.id, sample_session.id, tag_id)
         assert result is False
 
 
@@ -400,9 +367,7 @@ class TestTagApiRoutes:
     """Tests for the tag CRUD API endpoints."""
 
     async def test_api_create_tag(self, client: AsyncClient) -> None:
-        resp = await client.post(
-            "/api/tags", json={"name": "api-tag", "color": "#00ff00"}
-        )
+        resp = await client.post("/api/tags", json={"name": "api-tag", "color": "#00ff00"})
         assert resp.status_code == 201
         data = resp.json()
         assert data["name"] == "api-tag"
@@ -421,9 +386,7 @@ class TestTagApiRoutes:
         assert resp.status_code == 409
 
     async def test_api_create_tag_invalid_color(self, client: AsyncClient) -> None:
-        resp = await client.post(
-            "/api/tags", json={"name": "bad-color", "color": "not-a-color"}
-        )
+        resp = await client.post("/api/tags", json={"name": "bad-color", "color": "not-a-color"})
         assert resp.status_code == 422
 
     async def test_api_create_tag_empty_name(self, client: AsyncClient) -> None:
@@ -455,9 +418,7 @@ class TestTagApiRoutes:
         create_resp = await client.post("/api/tags", json={"name": "old-api-name"})
         tag_id = create_resp.json()["id"]
 
-        resp = await client.patch(
-            f"/api/tags/{tag_id}", json={"name": "new-api-name"}
-        )
+        resp = await client.patch(f"/api/tags/{tag_id}", json={"name": "new-api-name"})
         assert resp.status_code == 200
         assert resp.json()["name"] == "new-api-name"
 
@@ -465,29 +426,21 @@ class TestTagApiRoutes:
         create_resp = await client.post("/api/tags", json={"name": "update-color"})
         tag_id = create_resp.json()["id"]
 
-        resp = await client.patch(
-            f"/api/tags/{tag_id}", json={"color": "#abcdef"}
-        )
+        resp = await client.patch(f"/api/tags/{tag_id}", json={"color": "#abcdef"})
         assert resp.status_code == 200
         assert resp.json()["color"] == "#abcdef"
 
     async def test_api_update_tag_not_found(self, client: AsyncClient) -> None:
         random_id = uuid.uuid4()
-        resp = await client.patch(
-            f"/api/tags/{random_id}", json={"name": "nope"}
-        )
+        resp = await client.patch(f"/api/tags/{random_id}", json={"name": "nope"})
         assert resp.status_code == 404
 
-    async def test_api_update_tag_duplicate_name_409(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_api_update_tag_duplicate_name_409(self, client: AsyncClient) -> None:
         await client.post("/api/tags", json={"name": "existing-name"})
         create_resp = await client.post("/api/tags", json={"name": "rename-this"})
         tag_id = create_resp.json()["id"]
 
-        resp = await client.patch(
-            f"/api/tags/{tag_id}", json={"name": "existing-name"}
-        )
+        resp = await client.patch(f"/api/tags/{tag_id}", json={"name": "existing-name"})
         assert resp.status_code == 409
 
     async def test_api_delete_tag(self, client: AsyncClient) -> None:

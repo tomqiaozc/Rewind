@@ -1,4 +1,5 @@
 """Pydantic request/response schemas for the ingest API."""
+
 from __future__ import annotations
 
 from datetime import datetime

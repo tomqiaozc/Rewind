@@ -4,6 +4,7 @@ NOTE: search_sessions() relies on PostgreSQL's tsvector/tsquery and cannot
 be tested against SQLite. Only the pure-Python sanitize_snippet() helper is
 tested here.
 """
+
 from __future__ import annotations
 
 from src.services.search import SNIPPET_CLOSE, SNIPPET_OPEN, sanitize_snippet
@@ -24,10 +25,7 @@ class TestSanitizeSnippet:
 
     def test_sanitize_snippet_xss(self) -> None:
         """HTML inside the content is escaped BEFORE mark tags are inserted."""
-        raw = (
-            f"before <script>alert('xss')</script> "
-            f"{SNIPPET_OPEN}match{SNIPPET_CLOSE} after"
-        )
+        raw = f"before <script>alert('xss')</script> {SNIPPET_OPEN}match{SNIPPET_CLOSE} after"
         result = sanitize_snippet(raw)
         # The <script> tag must be escaped
         assert "<script>" not in result
@@ -48,10 +46,7 @@ class TestSanitizeSnippet:
 
     def test_sanitize_snippet_multiple_highlights(self) -> None:
         """Multiple highlighted segments are all converted."""
-        raw = (
-            f"{SNIPPET_OPEN}first{SNIPPET_CLOSE} middle "
-            f"{SNIPPET_OPEN}second{SNIPPET_CLOSE}"
-        )
+        raw = f"{SNIPPET_OPEN}first{SNIPPET_CLOSE} middle {SNIPPET_OPEN}second{SNIPPET_CLOSE}"
         result = sanitize_snippet(raw)
         assert result == "<mark>first</mark> middle <mark>second</mark>"
 

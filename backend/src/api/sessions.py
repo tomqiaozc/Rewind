@@ -1,4 +1,5 @@
 """Session read API routes — list, detail, filters, and raw content."""
+
 from __future__ import annotations
 
 import gzip
@@ -112,9 +113,7 @@ async def list_trashed_sessions(
     db: AsyncSession = Depends(get_db),  # noqa: B008
 ) -> SessionListResponse:
     """Return paginated list of soft-deleted sessions."""
-    items, total = await sessions.list_trashed_sessions(
-        db, user.id, page=page, page_size=page_size
-    )
+    items, total = await sessions.list_trashed_sessions(db, user.id, page=page, page_size=page_size)
     return SessionListResponse(
         items=[_session_to_list_item(s) for s in items],
         total=total,
@@ -132,9 +131,7 @@ async def batch_operation(
 ) -> BatchResponse:
     """Perform a batch operation on multiple sessions."""
     try:
-        affected = await sessions.batch_operation(
-            db, user.id, body.session_ids, body.action
-        )
+        affected = await sessions.batch_operation(db, user.id, body.session_ids, body.action)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -325,9 +322,7 @@ async def restore_session(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.put(
-    "/{session_id}/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT
-)
+@router.put("/{session_id}/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def add_tag(
     session_id: UUID,
     tag_id: UUID,
@@ -344,9 +339,7 @@ async def add_tag(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.delete(
-    "/{session_id}/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT
-)
+@router.delete("/{session_id}/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_tag(
     session_id: UUID,
     tag_id: UUID,

@@ -1,4 +1,5 @@
 """Tests for the projects service and API routes."""
+
 from __future__ import annotations
 
 import uuid
@@ -135,9 +136,7 @@ async def client(session_factory, user: User):
     app.dependency_overrides[get_db] = _override_db
     app.dependency_overrides[get_current_user] = _override_user
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
     app.dependency_overrides.clear()
@@ -151,31 +150,41 @@ async def client(session_factory, user: User):
 class TestListProjects:
     """Tests for the list_projects service function."""
 
-    async def test_list_projects(
-        self, db_session: AsyncSession, user: User
-    ) -> None:
+    async def test_list_projects(self, db_session: AsyncSession, user: User) -> None:
         """Seed 3 sessions across 2 projects, verify aggregates."""
         # Project A: 2 sessions
         db_session.add(
             _make_session(
-                user.id, 0, project_name="alpha",
-                total_messages=10, total_input_tokens=100,
-                total_output_tokens=200, duration_seconds=60,
+                user.id,
+                0,
+                project_name="alpha",
+                total_messages=10,
+                total_input_tokens=100,
+                total_output_tokens=200,
+                duration_seconds=60,
             )
         )
         db_session.add(
             _make_session(
-                user.id, 1, project_name="alpha",
-                total_messages=20, total_input_tokens=300,
-                total_output_tokens=400, duration_seconds=120,
+                user.id,
+                1,
+                project_name="alpha",
+                total_messages=20,
+                total_input_tokens=300,
+                total_output_tokens=400,
+                duration_seconds=120,
             )
         )
         # Project B: 1 session
         db_session.add(
             _make_session(
-                user.id, 2, project_name="beta",
-                total_messages=5, total_input_tokens=50,
-                total_output_tokens=75, duration_seconds=30,
+                user.id,
+                2,
+                project_name="beta",
+                total_messages=5,
+                total_input_tokens=50,
+                total_output_tokens=75,
+                duration_seconds=30,
             )
         )
         await db_session.commit()
@@ -203,12 +212,13 @@ class TestListProjects:
     ) -> None:
         """Trashed session's project should not be counted."""
         now = datetime.now(timezone.utc)
-        db_session.add(
-            _make_session(user.id, 10, project_name="alive")
-        )
+        db_session.add(_make_session(user.id, 10, project_name="alive"))
         db_session.add(
             _make_session(
-                user.id, 11, project_name="dead", deleted_at=now,
+                user.id,
+                11,
+                project_name="dead",
+                deleted_at=now,
             )
         )
         await db_session.commit()
@@ -230,26 +240,16 @@ class TestListProjects:
         assert len(results) == 1
         assert results[0]["project_name"] == "visible"
 
-    async def test_list_projects_empty(
-        self, db_session: AsyncSession, user: User
-    ) -> None:
+    async def test_list_projects_empty(self, db_session: AsyncSession, user: User) -> None:
         """No sessions should return an empty list."""
         results = await list_projects(db_session, user.id)
         assert results == []
 
-    async def test_list_projects_sources(
-        self, db_session: AsyncSession, user: User
-    ) -> None:
+    async def test_list_projects_sources(self, db_session: AsyncSession, user: User) -> None:
         """Verify distinct sources per project."""
-        db_session.add(
-            _make_session(user.id, 30, project_name="multi", source="claude")
-        )
-        db_session.add(
-            _make_session(user.id, 31, project_name="multi", source="opencode")
-        )
-        db_session.add(
-            _make_session(user.id, 32, project_name="multi", source="claude")
-        )
+        db_session.add(_make_session(user.id, 30, project_name="multi", source="claude"))
+        db_session.add(_make_session(user.id, 31, project_name="multi", source="opencode"))
+        db_session.add(_make_session(user.id, 32, project_name="multi", source="claude"))
         await db_session.commit()
 
         results = await list_projects(db_session, user.id)
@@ -273,9 +273,7 @@ class TestProjectsApi:
         self, client: AsyncClient, db_session: AsyncSession, user: User
     ) -> None:
         """GET /api/projects returns project summaries."""
-        db_session.add(
-            _make_session(user.id, 40, project_name="api-proj")
-        )
+        db_session.add(_make_session(user.id, 40, project_name="api-proj"))
         await db_session.commit()
 
         resp = await client.get("/api/projects")
@@ -316,9 +314,7 @@ class TestProjectsApi:
             new_callable=AsyncMock,
             return_value=mock_activity,
         ):
-            async with AsyncClient(
-                transport=ASGITransport(app=app), base_url="http://test"
-            ) as ac:
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
                 resp = await ac.get("/api/projects/activity?days=30")
 
         assert resp.status_code == 200

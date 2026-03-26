@@ -1,4 +1,5 @@
 """Full-text search service with XSS-safe snippet extraction."""
+
 from __future__ import annotations
 
 import html

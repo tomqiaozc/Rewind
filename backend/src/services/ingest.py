@@ -1,4 +1,5 @@
 """Ingest service — business logic for session metadata upsert and content uploads."""
+
 from __future__ import annotations
 
 import gzip
@@ -138,9 +139,7 @@ def _decompress_with_limit(
             break
         total_size += len(chunk)
         if total_size > max_decompressed:
-            raise ValueError(
-                f"Decompressed data exceeds {max_decompressed} byte limit"
-            )
+            raise ValueError(f"Decompressed data exceeds {max_decompressed} byte limit")
         chunks.append(chunk)
     return b"".join(chunks)
 
@@ -220,13 +219,9 @@ async def process_messages_and_chunks(
     Returns the number of messages inserted.
     """
     # Delete existing chunks first (they reference messages via FK)
-    await db.execute(
-        delete(MessageChunk).where(MessageChunk.session_id == session_id)
-    )
+    await db.execute(delete(MessageChunk).where(MessageChunk.session_id == session_id))
     # Delete existing messages
-    await db.execute(
-        delete(Message).where(Message.session_id == session_id)
-    )
+    await db.execute(delete(Message).where(Message.session_id == session_id))
 
     inserted = 0
     for msg_data in messages:

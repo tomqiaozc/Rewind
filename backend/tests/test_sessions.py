@@ -1,4 +1,5 @@
 """Tests for the sessions service and API routes (Phase 3a read APIs)."""
+
 from __future__ import annotations
 
 import uuid
@@ -184,9 +185,7 @@ async def client(db_session: AsyncSession, user: User, engine):
     app.dependency_overrides[get_db] = _override_db
     app.dependency_overrides[get_current_user] = _override_user
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
     app.dependency_overrides.clear()
@@ -245,9 +244,7 @@ class TestListSessions:
     async def test_list_sessions_sort_order_asc(
         self, db_session: AsyncSession, user: User, sample_sessions: list[Session]
     ) -> None:
-        items, _ = await list_sessions(
-            db_session, user.id, sort_by="started_at", sort_order="asc"
-        )
+        items, _ = await list_sessions(db_session, user.id, sort_by="started_at", sort_order="asc")
         dates = [s.started_at for s in items if s.started_at is not None]
         assert dates == sorted(dates)
 
@@ -326,9 +323,7 @@ class TestGetSessionDetail:
     ) -> None:
         # Use a different user_id — should not find anything
         other_user_id = uuid.uuid4()
-        detail = await get_session_detail(
-            db_session, other_user_id, sample_sessions[0].id
-        )
+        detail = await get_session_detail(db_session, other_user_id, sample_sessions[0].id)
         assert detail is None
 
     async def test_get_session_detail_nonexistent_session(
@@ -387,9 +382,7 @@ class TestSessionApiRoutes:
         session = sample_sessions[0]
 
         # Add a message + chunk via a fresh DB session
-        session_factory = async_sessionmaker(
-            engine, class_=AsyncSession, expire_on_commit=False
-        )
+        session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
         async with session_factory() as fresh_db:
             msg = Message(
                 id=uuid.uuid4(),
@@ -447,9 +440,7 @@ class TestSessionApiRoutes:
     async def test_api_list_sessions_pagination(
         self, client: AsyncClient, sample_sessions: list[Session]
     ) -> None:
-        resp = await client.get(
-            "/api/sessions", params={"page": 1, "page_size": 2}
-        )
+        resp = await client.get("/api/sessions", params={"page": 1, "page_size": 2})
         assert resp.status_code == 200
         data = resp.json()
         assert len(data["items"]) == 2
@@ -480,9 +471,7 @@ class TestSessionApiAuth:
 
         app.dependency_overrides[get_db] = _mock_db
 
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             resp = await ac.get("/api/sessions")
         assert resp.status_code == 401
         app.dependency_overrides.clear()

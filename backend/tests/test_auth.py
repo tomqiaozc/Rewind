@@ -1,4 +1,5 @@
 """Tests for the dual auth system (BFF proxy + API key)."""
+
 from __future__ import annotations
 
 import hashlib

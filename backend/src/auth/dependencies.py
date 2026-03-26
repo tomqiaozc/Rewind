@@ -10,6 +10,7 @@ Two auth paths are supported:
 
 If neither path matches, a 401 Unauthorized response is returned.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -45,9 +46,7 @@ async def get_current_user(
         api_key_value = auth_header[len("Bearer ") :]
         key_hash = hash_api_key(api_key_value)
         result = await db.execute(
-            select(ApiKey)
-            .options(selectinload(ApiKey.user))
-            .where(ApiKey.key_hash == key_hash)
+            select(ApiKey).options(selectinload(ApiKey.user)).where(ApiKey.key_hash == key_hash)
         )
         api_key = result.scalar_one_or_none()
         if api_key is None or api_key.user is None:

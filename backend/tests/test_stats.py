@@ -5,6 +5,7 @@ PostgreSQL-specific operation.  SQLite does not support the ``Date`` type
 cast the same way, so we test the service function with a mock and the API
 route separately.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -132,9 +133,7 @@ class TestStatsApiRoute:
         """GET /api/stats returns proper structure with mocked service data."""
         app = _build_test_app()
 
-        session_factory = async_sessionmaker(
-            engine, class_=AsyncSession, expire_on_commit=False
-        )
+        session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         async def _override_db():  # noqa: ANN202
             async with session_factory() as session:
@@ -183,9 +182,7 @@ class TestStatsApiRoute:
             new_callable=AsyncMock,
             return_value=mock_stats_data,
         ):
-            async with AsyncClient(
-                transport=ASGITransport(app=app), base_url="http://test"
-            ) as ac:
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
                 resp = await ac.get("/api/stats")
 
         assert resp.status_code == 200
@@ -220,9 +217,7 @@ class TestStatsApiRoute:
 
         app.dependency_overrides[get_db] = _mock_db
 
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             resp = await ac.get("/api/stats")
         assert resp.status_code == 401
         app.dependency_overrides.clear()
@@ -241,15 +236,11 @@ class TestStatsApiWithRealDb:
         reason="SQLite does not support cast(..., Date)",
         strict=False,
     )
-    async def test_api_stats_with_real_db(
-        self, user: User, engine, sample_sessions
-    ) -> None:
+    async def test_api_stats_with_real_db(self, user: User, engine, sample_sessions) -> None:
         """If SQLite happens to support the query, verify the response shape."""
         app = _build_test_app()
 
-        session_factory = async_sessionmaker(
-            engine, class_=AsyncSession, expire_on_commit=False
-        )
+        session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         async def _override_db():  # noqa: ANN202
             async with session_factory() as session:
@@ -261,9 +252,7 @@ class TestStatsApiWithRealDb:
         app.dependency_overrides[get_db] = _override_db
         app.dependency_overrides[get_current_user] = _override_user
 
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             resp = await ac.get("/api/stats")
 
         # If we get here, the query worked on SQLite

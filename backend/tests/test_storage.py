@@ -1,4 +1,5 @@
 """Tests for Azure Blob Storage service."""
+
 from __future__ import annotations
 
 from src.services.storage import BlobStorageService

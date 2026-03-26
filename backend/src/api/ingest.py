@@ -1,4 +1,5 @@
 """Ingest API routes — CLI session data ingestion endpoints."""
+
 from __future__ import annotations
 
 import hashlib
@@ -100,9 +101,7 @@ async def upload_canonical(
     compressed_data = await request.body()
 
     try:
-        result = await process_canonical_upload(
-            db, storage, user.id, session_key, compressed_data
-        )
+        result = await process_canonical_upload(db, storage, user.id, session_key, compressed_data)
     except LookupError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

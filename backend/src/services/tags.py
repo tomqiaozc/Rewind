@@ -1,4 +1,5 @@
 """Tag CRUD service — create, list, update, delete tags and session associations."""
+
 from __future__ import annotations
 
 import uuid
@@ -58,9 +59,7 @@ async def create_tag(
     Raises ``ValueError`` if a tag with the same name already exists for this user.
     """
     # Check uniqueness
-    existing = await db.execute(
-        select(Tag).where(and_(Tag.user_id == user_id, Tag.name == name))
-    )
+    existing = await db.execute(select(Tag).where(and_(Tag.user_id == user_id, Tag.name == name)))
     if existing.scalar_one_or_none() is not None:
         raise ValueError(f"Tag '{name}' already exists")
 
@@ -95,18 +94,14 @@ async def update_tag(
     Returns ``None`` if the tag does not exist or does not belong to the user.
     Raises ``ValueError`` if renaming to a duplicate name.
     """
-    result = await db.execute(
-        select(Tag).where(and_(Tag.id == tag_id, Tag.user_id == user_id))
-    )
+    result = await db.execute(select(Tag).where(and_(Tag.id == tag_id, Tag.user_id == user_id)))
     tag = result.scalar_one_or_none()
     if tag is None:
         return None
 
     if name is not None and name != tag.name:
         # Check uniqueness of the new name
-        dup = await db.execute(
-            select(Tag).where(and_(Tag.user_id == user_id, Tag.name == name))
-        )
+        dup = await db.execute(select(Tag).where(and_(Tag.user_id == user_id, Tag.name == name)))
         if dup.scalar_one_or_none() is not None:
             raise ValueError(f"Tag '{name}' already exists")
         tag.name = name
@@ -138,9 +133,7 @@ async def delete_tag(
     tag_id: uuid.UUID,
 ) -> bool:
     """Delete a tag. Returns True if deleted, False if not found."""
-    result = await db.execute(
-        select(Tag).where(and_(Tag.id == tag_id, Tag.user_id == user_id))
-    )
+    result = await db.execute(select(Tag).where(and_(Tag.id == tag_id, Tag.user_id == user_id)))
     tag = result.scalar_one_or_none()
     if tag is None:
         return False
@@ -161,9 +154,7 @@ async def add_tag_to_session(
     Returns False if the tag does not belong to the user.
     """
     # Verify ownership
-    result = await db.execute(
-        select(Tag).where(and_(Tag.id == tag_id, Tag.user_id == user_id))
-    )
+    result = await db.execute(select(Tag).where(and_(Tag.id == tag_id, Tag.user_id == user_id)))
     if result.scalar_one_or_none() is None:
         return False
 
@@ -190,9 +181,7 @@ async def remove_tag_from_session(
 ) -> bool:
     """Remove a tag-session association. Returns True if removed, False if not found."""
     # Verify ownership
-    result = await db.execute(
-        select(Tag).where(and_(Tag.id == tag_id, Tag.user_id == user_id))
-    )
+    result = await db.execute(select(Tag).where(and_(Tag.id == tag_id, Tag.user_id == user_id)))
     if result.scalar_one_or_none() is None:
         return False
 

@@ -1,4 +1,5 @@
 """Pydantic response schemas for Phase 3 read APIs."""
+
 from __future__ import annotations
 
 from datetime import datetime

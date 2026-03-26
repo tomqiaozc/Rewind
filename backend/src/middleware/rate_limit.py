@@ -1,4 +1,5 @@
 """Rate limiting middleware using slowapi."""
+
 from __future__ import annotations
 
 from slowapi import Limiter, _rate_limit_exceeded_handler

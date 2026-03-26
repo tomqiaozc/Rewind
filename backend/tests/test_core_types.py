@@ -75,9 +75,7 @@ class TestCanonicalMessage:
 
     def test_serialization_roundtrip(self) -> None:
         now = datetime.now(tz=timezone.utc)
-        msg = CanonicalMessage(
-            role="assistant", ordinal=5, content="Hello", started_at=now
-        )
+        msg = CanonicalMessage(role="assistant", ordinal=5, content="Hello", started_at=now)
         data = msg.model_dump()
         restored = CanonicalMessage.model_validate(data)
         assert restored == msg

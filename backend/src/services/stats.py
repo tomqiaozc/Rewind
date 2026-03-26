@@ -1,4 +1,5 @@
 """Dashboard aggregate statistics service."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -50,12 +51,8 @@ async def get_dashboard_stats(
     agg_stmt = select(
         func.count(Session.id).label("total_sessions"),
         func.coalesce(func.sum(Session.total_messages), 0).label("total_messages"),
-        func.coalesce(func.sum(Session.total_input_tokens), 0).label(
-            "total_input_tokens"
-        ),
-        func.coalesce(func.sum(Session.total_output_tokens), 0).label(
-            "total_output_tokens"
-        ),
+        func.coalesce(func.sum(Session.total_input_tokens), 0).label("total_input_tokens"),
+        func.coalesce(func.sum(Session.total_output_tokens), 0).label("total_output_tokens"),
     ).where(not_deleted)
 
     agg_row = (await db.execute(agg_stmt)).one()
@@ -73,9 +70,7 @@ async def get_dashboard_stats(
     )
 
     by_source_rows = (await db.execute(by_source_stmt)).all()
-    sessions_by_source: dict[str, int] = {
-        row.source: row.cnt for row in by_source_rows
-    }
+    sessions_by_source: dict[str, int] = {row.source: row.cnt for row in by_source_rows}
 
     # ------------------------------------------------------------------
     # 3. Sessions grouped by day (last N days)
@@ -98,9 +93,7 @@ async def get_dashboard_stats(
     )
 
     by_day_rows = (await db.execute(by_day_stmt)).all()
-    sessions_by_day: list[tuple[str, int]] = [
-        (row.day.isoformat(), row.cnt) for row in by_day_rows
-    ]
+    sessions_by_day: list[tuple[str, int]] = [(row.day.isoformat(), row.cnt) for row in by_day_rows]
 
     # ------------------------------------------------------------------
     # 4. Recent sessions (last 10)
@@ -136,9 +129,7 @@ async def get_dashboard_stats(
             "session_key": row.session_key,
             "source": row.source,
             "started_at": row.started_at.isoformat() if row.started_at else None,
-            "last_message_at": (
-                row.last_message_at.isoformat() if row.last_message_at else None
-            ),
+            "last_message_at": (row.last_message_at.isoformat() if row.last_message_at else None),
             "duration_seconds": row.duration_seconds,
             "total_messages": row.total_messages,
             "user_messages": row.user_messages,

@@ -1,4 +1,5 @@
 """Dashboard statistics API route."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -33,10 +34,7 @@ async def get_dashboard_stats(
         total_output_tokens=data["total_output_tokens"],
         sessions_by_source=data["sessions_by_source"],
         sessions_by_day=[
-            DayCount(date=date, count=count)
-            for date, count in data["sessions_by_day"]
+            DayCount(date=date, count=count) for date, count in data["sessions_by_day"]
         ],
-        recent_sessions=[
-            SessionListItem(**s) for s in data["recent_sessions"]
-        ],
+        recent_sessions=[SessionListItem(**s) for s in data["recent_sessions"]],
     )
