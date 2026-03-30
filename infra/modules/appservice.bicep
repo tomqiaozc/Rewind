@@ -154,6 +154,10 @@ resource frontendApp 'Microsoft.Web/sites@2023-12-01' = {
           name: 'AUTH_TRUST_HOST'
           value: 'true'
         }
+        {
+          name: 'AUTH_URL'
+          value: 'https://${frontendAppName}.azurewebsites.net'
+        }
         // Key Vault references for NextAuth secrets
         {
           name: 'AUTH_SECRET'
