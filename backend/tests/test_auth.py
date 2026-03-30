@@ -194,6 +194,86 @@ class TestBffProxyAuth:
         app.dependency_overrides.clear()
 
 
+class TestBffProxyEdgeCases:
+    """Edge-case tests for the BFF proxy auth path."""
+
+    def test_invalid_uuid_format_returns_401(self) -> None:
+        """X-User-Id with non-UUID value must be rejected."""
+        app = _make_test_app()
+
+        async def mock_get_db():  # noqa: ANN202
+            yield _make_mock_db(scalar_return=None)
+
+        app.dependency_overrides[get_db] = mock_get_db
+        client = TestClient(app)
+        with patch("src.auth.dependencies.settings") as mock_settings:
+            mock_settings.backend_secret = "test-secret"
+            resp = client.get(
+                "/api/protected",
+                headers={
+                    "X-Backend-Secret": "test-secret",
+                    "X-User-Id": "not-a-uuid",
+                },
+            )
+        assert resp.status_code == 401
+        app.dependency_overrides.clear()
+
+    def test_backend_secret_without_user_id_returns_401(self) -> None:
+        """X-Backend-Secret alone (no X-User-Id) must not authenticate."""
+        app = _make_test_app()
+
+        async def mock_get_db():  # noqa: ANN202
+            yield _make_mock_db(scalar_return=None)
+
+        app.dependency_overrides[get_db] = mock_get_db
+        client = TestClient(app)
+        with patch("src.auth.dependencies.settings") as mock_settings:
+            mock_settings.backend_secret = "test-secret"
+            resp = client.get(
+                "/api/protected",
+                headers={"X-Backend-Secret": "test-secret"},
+            )
+        assert resp.status_code == 401
+        app.dependency_overrides.clear()
+
+    def test_user_id_without_backend_secret_returns_401(self) -> None:
+        """X-User-Id alone (no X-Backend-Secret) must not authenticate."""
+        app = _make_test_app()
+
+        async def mock_get_db():  # noqa: ANN202
+            yield _make_mock_db(scalar_return=None)
+
+        app.dependency_overrides[get_db] = mock_get_db
+        client = TestClient(app)
+        resp = client.get(
+            "/api/protected",
+            headers={"X-User-Id": str(uuid.uuid4())},
+        )
+        assert resp.status_code == 401
+        app.dependency_overrides.clear()
+
+    def test_valid_secret_nonexistent_user_returns_401(self) -> None:
+        """Valid backend secret with a user ID that doesn't exist in DB."""
+        app = _make_test_app()
+
+        async def mock_get_db():  # noqa: ANN202
+            yield _make_mock_db(scalar_return=None)
+
+        app.dependency_overrides[get_db] = mock_get_db
+        client = TestClient(app)
+        with patch("src.auth.dependencies.settings") as mock_settings:
+            mock_settings.backend_secret = "test-secret"
+            resp = client.get(
+                "/api/protected",
+                headers={
+                    "X-Backend-Secret": "test-secret",
+                    "X-User-Id": str(uuid.uuid4()),
+                },
+            )
+        assert resp.status_code == 401
+        app.dependency_overrides.clear()
+
+
 class TestApiKeyAuth:
     """Test API key auth path (Bearer rw_...)."""
 
@@ -226,4 +306,46 @@ class TestApiKeyAuth:
         data = resp.json()
         assert data["user_id"] == str(user_id)
         assert data["email"] == "cli@example.com"
+        app.dependency_overrides.clear()
+
+    def test_api_key_with_null_user_returns_401(self) -> None:
+        """API key exists but has no associated user."""
+        raw_key = "rw_" + "b" * 32
+        key_hash = hash_api_key(raw_key)
+        mock_api_key = ApiKey(
+            id=uuid.uuid4(),
+            user_id=uuid.uuid4(),
+            key_hash=key_hash,
+        )
+        mock_api_key.user = None  # type: ignore[assignment]
+
+        app = _make_test_app()
+
+        async def mock_get_db():  # noqa: ANN202
+            yield _make_mock_db(scalar_return=mock_api_key)
+
+        app.dependency_overrides[get_db] = mock_get_db
+
+        client = TestClient(app)
+        resp = client.get(
+            "/api/protected",
+            headers={"Authorization": f"Bearer {raw_key}"},
+        )
+        assert resp.status_code == 401
+        app.dependency_overrides.clear()
+
+    def test_bearer_without_rw_prefix_falls_through(self) -> None:
+        """Bearer token that doesn't start with 'rw_' should not match API key path."""
+        app = _make_test_app()
+
+        async def mock_get_db():  # noqa: ANN202
+            yield _make_mock_db(scalar_return=None)
+
+        app.dependency_overrides[get_db] = mock_get_db
+        client = TestClient(app)
+        resp = client.get(
+            "/api/protected",
+            headers={"Authorization": "Bearer some_other_token_format"},
+        )
+        assert resp.status_code == 401
         app.dependency_overrides.clear()

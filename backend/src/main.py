@@ -8,6 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.ingest import router as ingest_router
+from src.api.keys import router as keys_router
 from src.api.projects import router as projects_router
 from src.api.search import router as search_router
 from src.api.sessions import router as sessions_router
@@ -46,6 +47,7 @@ app.add_middleware(RequestLoggingMiddleware)
 
 # Register routers
 app.include_router(ingest_router)
+app.include_router(keys_router)
 app.include_router(sessions_router)
 app.include_router(search_router)
 app.include_router(stats_router)

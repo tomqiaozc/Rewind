@@ -40,6 +40,8 @@ async def engine():
         cursor = dbapi_conn.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
+        # Register a dummy to_tsvector so the GENERATED column DDL succeeds.
+        dbapi_conn.create_function("to_tsvector", 2, lambda *args: "", deterministic=True)
 
     async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

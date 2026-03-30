@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from src.auth.dependencies import get_current_user
 from src.db.session import get_db
@@ -70,12 +70,12 @@ async def update_tag(
     return TagResponse(**result)
 
 
-@router.delete("/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{tag_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
 async def delete_tag(
     tag_id: UUID,
     user: User = Depends(get_current_user),  # noqa: B008
     db: AsyncSession = Depends(get_db),  # noqa: B008
-) -> None:
+) -> Response:
     """Delete a tag."""
     deleted = await tag_service.delete_tag(db, user.id, tag_id)
     if not deleted:
@@ -83,3 +83,4 @@ async def delete_tag(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Tag not found",
         )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

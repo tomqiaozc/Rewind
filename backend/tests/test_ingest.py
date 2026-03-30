@@ -602,9 +602,9 @@ class TestIngestRouterRegistered:
 
         route_paths = {r.path for r in app.routes}  # type: ignore[union-attr]
         assert "/api/ingest/sessions" in route_paths
-        assert "/api/ingest/content/{session_key}/canonical" in route_paths
-        assert "/api/ingest/content/{session_key}/raw" in route_paths
-        assert "/api/ingest/content/{session_key}/raw/confirm" in route_paths
+        assert "/api/ingest/content/{session_key:path}/canonical" in route_paths
+        assert "/api/ingest/content/{session_key:path}/raw" in route_paths
+        assert "/api/ingest/content/{session_key:path}/raw/confirm" in route_paths
         assert "/api/ingest/presign" in route_paths
 
 

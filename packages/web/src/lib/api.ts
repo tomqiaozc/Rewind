@@ -1,8 +1,11 @@
 /**
  * API client for the Rewind backend.
  *
- * During development without auth, calls go directly to the Python backend.
- * In production, calls go through Next.js API route proxies (BFF pattern).
+ * In development with NEXT_PUBLIC_API_URL set, calls go directly to the
+ * Python backend using the API key for authentication.
+ *
+ * In production (or dev without NEXT_PUBLIC_API_URL), calls go through
+ * Next.js BFF proxy routes which attach NextAuth session headers.
  */
 import type {
   BatchRequest,
@@ -17,7 +20,9 @@ import type {
   Tag,
 } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Dev direct mode: NEXT_PUBLIC_API_URL + NEXT_PUBLIC_API_KEY bypass BFF
+// Production / BFF mode: relative paths hit Next.js API routes
+const DIRECT_URL = process.env.NEXT_PUBLIC_API_URL;
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY || "";
 
 class ApiError extends Error {
@@ -31,15 +36,29 @@ class ApiError extends Error {
 }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = `${API_BASE}${path}`;
+  // If NEXT_PUBLIC_API_URL is set, call backend directly (dev convenience)
+  // Otherwise use relative path to hit Next.js BFF proxy routes
+  const url = DIRECT_URL ? `${DIRECT_URL}${path}` : path;
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...((init?.headers as Record<string, string>) ?? {}),
+  };
+
+  // Only attach API key in direct mode
+  if (DIRECT_URL && API_KEY) {
+    headers["Authorization"] = `Bearer ${API_KEY}`;
+  }
+
   const res = await fetch(url, {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
-      ...init?.headers,
-    },
+    headers,
   });
+
+  if (res.status === 401 && !DIRECT_URL && typeof window !== "undefined") {
+    window.location.href = "/login";
+    return undefined as unknown as T;
+  }
 
   if (!res.ok) {
     const body = await res.text().catch(() => "Unknown error");

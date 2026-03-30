@@ -4,12 +4,14 @@ import {
   BarChart3,
   Clock,
   LayoutDashboard,
+  LogOut,
   Search,
   Settings,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
 
 import {
   Sidebar,
@@ -23,6 +25,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const navItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -91,9 +100,58 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t p-4">
-        <p className="text-xs text-muted-foreground">Rewind v0.1.0</p>
+      <SidebarFooter className="border-t p-2">
+        <UserMenu />
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+function UserMenu() {
+  const { data: session } = useSession();
+
+  if (!session?.user) {
+    return <p className="px-2 text-xs text-muted-foreground">Rewind v0.1.0</p>;
+  }
+
+  const initials =
+    session.user.name
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) ?? "U";
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <SidebarMenuButton className="w-full">
+                <Avatar className="size-6">
+                  <AvatarImage src={session.user.image ?? undefined} />
+                  <AvatarFallback className="text-[10px]">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="truncate">{session.user.name ?? session.user.email}</span>
+              </SidebarMenuButton>
+            }
+          />
+          <DropdownMenuContent side="top" align="start" className="w-56">
+            <DropdownMenuItem disabled>
+              <span className="truncate text-xs text-muted-foreground">
+                {session.user.email}
+              </span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/login" })}>
+              <LogOut className="mr-2 size-4" />
+              Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
   );
 }
