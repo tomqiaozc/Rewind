@@ -1,5 +1,6 @@
 using '../main.bicep'
 
 param environment = 'prod'
-param projectName = 'rewind'
-param location = 'eastus'
+param projectName = 'rwnd'
+param location = 'eastasia'
+param postgresAdminPassword = readEnvironmentVariable('PG_PASS', '')

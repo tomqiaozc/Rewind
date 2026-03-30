@@ -36,7 +36,6 @@ param location string = resourceGroup().location
 @description('Project name used as a prefix for resource names.')
 param projectName string = 'rewind'
 
-@secure()
 @description('PostgreSQL administrator login name.')
 param postgresAdminLogin string = 'rewindadmin'
 
@@ -45,13 +44,14 @@ param postgresAdminLogin string = 'rewindadmin'
 param postgresAdminPassword string
 
 // ── SKU Selection ────────────────────────────
-// Dev:  Burstable B1ms (~$13/mo), App Service B1 (~$13/mo each)
-// Prod: GP Standard_D2ds_v4 (~$100/mo), App Service P1v3 (~$76/mo each)
+// Using lowest-cost SKUs for both environments.
+// Burstable B1ms (~$13/mo), App Service B1 (~$13/mo each)
+// Upgrade to higher SKUs when needed.
 
-var postgresSkuName = environment == 'prod' ? 'Standard_D2ds_v4' : 'Standard_B1ms'
-var postgresSkuTier = environment == 'prod' ? 'GeneralPurpose' : 'Burstable'
-var postgresStorageGB = environment == 'prod' ? 128 : 32
-var appServiceSku = environment == 'prod' ? 'P1v3' : 'B1'
+var postgresSkuName = 'Standard_B1ms'
+var postgresSkuTier = 'Burstable'
+var postgresStorageGB = 32
+var appServiceSku = 'B1'
 
 // ── Resource Names ───────────────────────────
 // Convention: {project}-{resource}-{env}
@@ -60,7 +60,7 @@ var suffix = '${projectName}-${environment}'
 var monitoringWorkspaceName = 'log-${suffix}'
 var appInsightsName = 'ai-${suffix}'
 var postgresServerName = 'pg-${suffix}'
-var storageAccountName = replace('st${projectName}${environment}', '-', '')  // 3-24 alphanumeric only
+var storageAccountName = 'st${take(uniqueString(resourceGroup().id, projectName), 20)}'  // 3-24 alphanumeric, globally unique
 var appServicePlanName = 'plan-${suffix}'
 var backendAppName = 'app-backend-${suffix}'
 var frontendAppName = 'app-frontend-${suffix}'
