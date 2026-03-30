@@ -278,9 +278,7 @@ class TestKeysApiAuth:
 
         app.dependency_overrides[get_db] = _mock_db
 
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             resp = await ac.get("/api/keys")
         assert resp.status_code == 401
         app.dependency_overrides.clear()
@@ -302,9 +300,7 @@ class TestKeysApiAuth:
 
         app.dependency_overrides[get_db] = _mock_db
 
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             resp = await ac.delete(f"/api/keys/{uuid.uuid4()}")
         assert resp.status_code == 401
         app.dependency_overrides.clear()

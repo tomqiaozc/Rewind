@@ -48,9 +48,7 @@ async def list_keys(
 ) -> list[dict]:
     """List all API keys for the authenticated user."""
     result = await db.execute(
-        select(ApiKey)
-        .where(ApiKey.user_id == user.id)
-        .order_by(ApiKey.created_at.desc())
+        select(ApiKey).where(ApiKey.user_id == user.id).order_by(ApiKey.created_at.desc())
     )
     keys = result.scalars().all()
     return [
@@ -72,9 +70,7 @@ async def delete_key(
     db: AsyncSession = Depends(get_db),  # noqa: B008
 ) -> Response:
     """Delete an API key owned by the authenticated user."""
-    result = await db.execute(
-        select(ApiKey).where(ApiKey.id == key_id, ApiKey.user_id == user.id)
-    )
+    result = await db.execute(select(ApiKey).where(ApiKey.id == key_id, ApiKey.user_id == user.id))
     api_key = result.scalar_one_or_none()
     if api_key is None:
         raise HTTPException(
