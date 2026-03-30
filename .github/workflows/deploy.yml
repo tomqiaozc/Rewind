@@ -82,6 +82,15 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Clear stale startup command
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            az resource update \
+              --ids "/subscriptions/$(az account show --query id -o tsv)/resourceGroups/${{ vars.RESOURCE_GROUP }}/providers/Microsoft.Web/sites/${{ vars.BACKEND_APP_NAME }}/config/web" \
+              --set properties.appCommandLine="" \
+              --output none
+
       - name: Deploy Backend
         uses: azure/webapps-deploy@v3
         with:
