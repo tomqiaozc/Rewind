@@ -54,3 +54,11 @@ async def test_health_check_db_error() -> None:
     data = response.json()
     assert data["status"] == "degraded"
     assert data["db"] == "error"
+
+
+async def test_liveness() -> None:
+    """Liveness probe should return 200 with no dependencies."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.get("/api/health/liveness")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}

@@ -27,6 +27,7 @@ COPY --from=builder /install /usr/local
 COPY alembic.ini .
 COPY alembic/ alembic/
 COPY src/ src/
+COPY entrypoint.sh .
 
 # Create non-root user
 RUN useradd --create-home appuser
@@ -34,10 +35,5 @@ USER appuser
 
 EXPOSE 8000
 
-# Gunicorn with Uvicorn workers
-CMD ["gunicorn", "src.main:app", \
-     "--worker-class", "uvicorn.workers.UvicornWorker", \
-     "--workers", "2", \
-     "--bind", "0.0.0.0:8000", \
-     "--timeout", "120", \
-     "--access-logfile", "-"]
+# Entrypoint: run migrations then start gunicorn
+CMD ["sh", "entrypoint.sh"]

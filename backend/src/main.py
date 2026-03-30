@@ -55,9 +55,15 @@ app.include_router(tags_router)
 app.include_router(projects_router)
 
 
+@app.get("/api/health/liveness")
+async def liveness() -> dict:
+    """Lightweight liveness probe — no dependencies, always returns 200."""
+    return {"status": "ok"}
+
+
 @app.get("/api/health")
 async def health_check(db: AsyncSession = Depends(get_db)) -> dict:  # noqa: B008
-    """Health check with DB connectivity test."""
+    """Readiness check with DB connectivity test."""
     try:
         await db.execute(text("SELECT 1"))
         db_status = "ok"

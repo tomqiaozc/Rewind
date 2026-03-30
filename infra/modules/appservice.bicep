@@ -64,7 +64,7 @@ resource backendApp 'Microsoft.Web/sites@2023-12-01' = {
     siteConfig: {
       linuxFxVersion: 'DOCKER|${backendImage}'
       alwaysOn: true
-      healthCheckPath: '/api/health'
+      healthCheckPath: '/api/health/liveness'
       appSettings: [
         {
           name: 'DOCKER_REGISTRY_SERVER_URL'
