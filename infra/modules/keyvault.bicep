@@ -112,6 +112,22 @@ resource secretGoogleSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   }
 }
 
+resource secretGhcrUsername 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'GHCR-USERNAME'
+  properties: {
+    value: 'REPLACE_ME'
+  }
+}
+
+resource secretGhcrToken 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'GHCR-TOKEN'
+  properties: {
+    value: 'REPLACE_ME'
+  }
+}
+
 // ── Outputs ──────────────────────────────────
 
 @description('Key Vault URI.')

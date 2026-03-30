@@ -71,6 +71,17 @@ resource allowAzureServices 'Microsoft.DBforPostgreSQL/flexibleServers/firewallR
   }
 }
 
+// ── Database ────────────────────────────────
+
+resource rewindDatabase 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2024-08-01' = {
+  parent: postgresServer
+  name: 'rewind'
+  properties: {
+    charset: 'UTF8'
+    collation: 'en_US.utf8'
+  }
+}
+
 // ── Outputs ──────────────────────────────────
 
 @description('Fully qualified domain name of the PostgreSQL server.')

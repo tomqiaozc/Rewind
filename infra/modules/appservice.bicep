@@ -20,7 +20,7 @@ param location string
 @description('App Service Plan SKU (e.g. B1, P1v3).')
 param sku string = 'B1'
 
-@description('Docker registry URL (e.g. https://index.docker.io/v1 or an ACR login server).')
+@description('Docker registry URL (e.g. https://ghcr.io).')
 param dockerRegistryUrl string
 
 @description('Backend Docker image (e.g. myacr.azurecr.io/rewind-backend:latest).')
@@ -71,6 +71,14 @@ resource backendApp 'Microsoft.Web/sites@2023-12-01' = {
           value: dockerRegistryUrl
         }
         {
+          name: 'DOCKER_REGISTRY_SERVER_USERNAME'
+          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=GHCR-USERNAME)'
+        }
+        {
+          name: 'DOCKER_REGISTRY_SERVER_PASSWORD'
+          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=GHCR-TOKEN)'
+        }
+        {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
           value: appInsightsConnectionString
         }
@@ -91,6 +99,10 @@ resource backendApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'BACKEND_SECRET'
           value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=BACKEND-SECRET)'
+        }
+        {
+          name: 'CORS_ORIGINS'
+          value: 'https://${frontendAppName}.azurewebsites.net'
         }
       ]
     }
@@ -119,12 +131,28 @@ resource frontendApp 'Microsoft.Web/sites@2023-12-01' = {
           value: dockerRegistryUrl
         }
         {
+          name: 'DOCKER_REGISTRY_SERVER_USERNAME'
+          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=GHCR-USERNAME)'
+        }
+        {
+          name: 'DOCKER_REGISTRY_SERVER_PASSWORD'
+          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=GHCR-TOKEN)'
+        }
+        {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
           value: appInsightsConnectionString
         }
         {
           name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE'
           value: 'false'
+        }
+        {
+          name: 'BACKEND_URL'
+          value: 'https://${backendApp.properties.defaultHostName}'
+        }
+        {
+          name: 'AUTH_TRUST_HOST'
+          value: 'true'
         }
         // Key Vault references for NextAuth secrets
         {

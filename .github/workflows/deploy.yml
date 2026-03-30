@@ -98,9 +98,21 @@ jobs:
         uses: azure/CLI@v2
         with:
           inlineScript: |
-            az webapp ssh --resource-group ${{ vars.RESOURCE_GROUP }} \
+            az webapp config set \
+              --resource-group ${{ vars.RESOURCE_GROUP }} \
               --name ${{ vars.BACKEND_APP_NAME }} \
-              --command "cd /app && alembic upgrade head"
+              --startup-file "alembic upgrade head && uvicorn src.main:app --host 0.0.0.0 --port 8000"
+            # Restart to pick up the new startup command
+            az webapp restart \
+              --resource-group ${{ vars.RESOURCE_GROUP }} \
+              --name ${{ vars.BACKEND_APP_NAME }}
+            # Wait for the container to start and run migrations
+            sleep 60
+            # Reset startup command back to default (Dockerfile CMD)
+            az webapp config set \
+              --resource-group ${{ vars.RESOURCE_GROUP }} \
+              --name ${{ vars.BACKEND_APP_NAME }} \
+              --startup-file ""
 
       - name: Smoke test
         run: |

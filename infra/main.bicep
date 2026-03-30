@@ -68,7 +68,7 @@ var keyVaultName = 'kv-${suffix}'
 
 // Docker images — override these at deploy time
 // with actual ACR image references.
-var dockerRegistryUrl = 'https://index.docker.io/v1'
+var dockerRegistryUrl = 'https://ghcr.io'
 var backendImage = '${projectName}/backend:latest'
 var frontendImage = '${projectName}/frontend:latest'
 
