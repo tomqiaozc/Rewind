@@ -162,6 +162,15 @@ export interface BatchResponse {
   affected: number;
 }
 
+// API Key
+export interface ApiKey {
+  id: string;
+  device_name: string | null;
+  key_prefix: string | null;
+  created_at: string;
+  last_used_at: string | null;
+}
+
 // Source type display helpers
 export const SOURCE_LABELS: Record<string, string> = {
   claude_code: "Claude Code",

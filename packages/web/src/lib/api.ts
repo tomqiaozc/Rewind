@@ -8,6 +8,7 @@
  * Next.js BFF proxy routes which attach NextAuth session headers.
  */
 import type {
+  ApiKey,
   BatchRequest,
   BatchResponse,
   DashboardStats,
@@ -238,4 +239,23 @@ export async function getProjectActivity(
 ): Promise<ProjectActivity[]> {
   const qs = days ? `?days=${days}` : "";
   return apiFetch<ProjectActivity[]>(`/api/projects/activity${qs}`);
+}
+
+// ── API Keys ─────────────────────────────────────────────────────────
+
+export async function listApiKeys(): Promise<ApiKey[]> {
+  return apiFetch<ApiKey[]>("/api/keys");
+}
+
+export async function createApiKey(
+  deviceName?: string,
+): Promise<{ key: string; id: string; device_name: string | null; created_at: string }> {
+  return apiFetch("/api/keys", {
+    method: "POST",
+    body: JSON.stringify({ device_name: deviceName ?? null }),
+  });
+}
+
+export async function deleteApiKey(id: string): Promise<void> {
+  return apiFetch<void>(`/api/keys/${id}`, { method: "DELETE" });
 }

@@ -70,6 +70,7 @@ class ApiKey(Base):
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     key_hash: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    key_prefix: Mapped[Optional[str]] = mapped_column(String(8))
     device_name: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)

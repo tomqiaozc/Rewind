@@ -3,6 +3,7 @@
 import {
   BarChart3,
   Clock,
+  Key,
   LayoutDashboard,
   LogOut,
   Search,
@@ -43,6 +44,7 @@ const manageItems = [
   { title: "Projects", href: "/dashboard/projects", icon: BarChart3 },
   { title: "Trash", href: "/dashboard/trash", icon: Trash2 },
   { title: "Settings", href: "/dashboard/settings", icon: Settings },
+  { title: "API Keys", href: "/dashboard/settings/keys", icon: Key },
 ];
 
 export function AppSidebar() {

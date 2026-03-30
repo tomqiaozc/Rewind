@@ -47,6 +47,7 @@ async def create_api_key(
     api_key = ApiKey(
         user_id=user_id,
         key_hash=key_hash,
+        key_prefix=plaintext[:8],
         device_name=device_name,
     )
     db.add(api_key)
