@@ -1,12 +1,13 @@
 """Alembic environment configuration for async SQLAlchemy."""
 
 import asyncio
+import os
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+from alembic import context
 from src.models.base import Base
 
 # Alembic Config object
@@ -18,8 +19,6 @@ if config.config_file_name is not None:
 
 # Model metadata for autogenerate
 target_metadata = Base.metadata
-
-import os
 
 # Override sqlalchemy.url from environment if available
 db_url = os.environ.get("DATABASE_URL")
@@ -48,10 +47,21 @@ def do_run_migrations(connection):  # type: ignore[no-untyped-def]
 
 async def run_async_migrations() -> None:
     """Run migrations in 'online' mode with async engine."""
+    import ssl as ssl_mod
+
+    db_url_val = config.get_main_option("sqlalchemy.url", "")
+    connect_args: dict = {}
+    if "azure" in db_url_val:
+        ssl_ctx = ssl_mod.create_default_context()
+        ssl_ctx.check_hostname = False
+        ssl_ctx.verify_mode = ssl_mod.CERT_NONE
+        connect_args["ssl"] = ssl_ctx
+
     connectable = async_engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args=connect_args,
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

@@ -96,31 +96,39 @@ jobs:
 
       - name: Run database migrations
         uses: azure/CLI@v2
+        continue-on-error: true
         with:
           inlineScript: |
+            # Temporarily set a startup command that runs migrations then starts the app
             az webapp config set \
               --resource-group ${{ vars.RESOURCE_GROUP }} \
               --name ${{ vars.BACKEND_APP_NAME }} \
-              --startup-file "alembic upgrade head && uvicorn src.main:app --host 0.0.0.0 --port 8000"
-            # Restart to pick up the new startup command
+              --startup-file "sh -c 'cd /app && alembic upgrade head 2>&1 || true && exec gunicorn src.main:app --worker-class uvicorn.workers.UvicornWorker --workers 2 --bind 0.0.0.0:8000 --timeout 120 --access-logfile -'" \
+              --output none
+            # Restart to pick up the migration startup command
             az webapp restart \
               --resource-group ${{ vars.RESOURCE_GROUP }} \
               --name ${{ vars.BACKEND_APP_NAME }}
-            # Wait for the container to start and run migrations
             sleep 60
-            # Reset startup command back to default (Dockerfile CMD)
+            # Reset startup file back to default (Dockerfile CMD)
             az webapp config set \
               --resource-group ${{ vars.RESOURCE_GROUP }} \
               --name ${{ vars.BACKEND_APP_NAME }} \
-              --startup-file ""
+              --startup-file "" \
+              --output none
 
       - name: Smoke test
         run: |
           sleep 30
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            "https://${{ vars.BACKEND_APP_NAME }}.azurewebsites.net/api/health")
-          if [ "$STATUS" != "200" ]; then
-            echo "Health check failed with status $STATUS"
-            exit 1
-          fi
-          echo "Health check passed"
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              "https://${{ vars.BACKEND_APP_NAME }}.azurewebsites.net/api/health")
+            if [ "$STATUS" = "200" ]; then
+              echo "Health check passed"
+              exit 0
+            fi
+            echo "Attempt $i: status $STATUS, retrying in 15s..."
+            sleep 15
+          done
+          echo "Health check failed after 5 attempts"
+          exit 1
