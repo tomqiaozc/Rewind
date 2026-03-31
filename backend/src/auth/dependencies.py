@@ -16,6 +16,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
+from urllib.parse import unquote
 
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy import select
@@ -86,8 +87,8 @@ async def get_current_user(
             # The BFF proxy has already validated the NextAuth session,
             # so the user is authenticated via Google OAuth.
             email = request.headers.get("X-User-Email", "")
-            name = request.headers.get("X-User-Name")
-            image = request.headers.get("X-User-Image")
+            name = unquote(request.headers.get("X-User-Name", "") or "") or None
+            image = unquote(request.headers.get("X-User-Image", "") or "") or None
             if not email:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,

@@ -29,15 +29,16 @@ export async function proxyToBackend(
       "X-User-Id": session.user.id,
     };
 
-    // Pass user profile for auto-creation on first login
+    // Pass user profile for auto-creation on first login.
+    // Header values must be ASCII-safe, so URI-encode any non-ASCII fields.
     if (session.user.email) {
       headers["X-User-Email"] = session.user.email;
     }
     if (session.user.name) {
-      headers["X-User-Name"] = session.user.name;
+      headers["X-User-Name"] = encodeURIComponent(session.user.name);
     }
     if (session.user.image) {
-      headers["X-User-Image"] = session.user.image;
+      headers["X-User-Image"] = encodeURIComponent(session.user.image);
     }
 
     // Preserve Content-Type for requests with a body
