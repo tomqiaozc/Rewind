@@ -15,8 +15,10 @@
 // Note: App Service references Key Vault secrets
 // via @Microsoft.KeyVault() syntax. On first deploy,
 // those references will fail to resolve until KV
-// secrets are populated. This is expected — the apps
-// will start serving once secrets are set.
+// secrets are populated via Azure CLI. Secrets are
+// NOT managed by Bicep to prevent redeployments from
+// overwriting real values. See keyvault.bicep header
+// for the list of required secrets.
 // ──────────────────────────────────────────────
 
 targetScope = 'resourceGroup'

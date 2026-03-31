@@ -15,7 +15,7 @@
 9. [First Deployment](#9-first-deployment)
 10. [Verify Deployment](#10-verify-deployment)
 11. [Custom Domain & TLS (Optional)](#11-custom-domain--tls-optional)
-12. [Frontend Auth Setup (NextAuth)](#12-frontend-auth-setup-nextauth)
+12. [Frontend Auth (NextAuth v5)](#12-frontend-auth-nextauth-v5)
 13. [CLI Setup & First Sync](#13-cli-setup--first-sync)
 14. [Monitoring & Alerts](#14-monitoring--alerts)
 15. [Maintenance & Operations](#15-maintenance--operations)
@@ -214,7 +214,7 @@ postgresql+asyncpg://rewindadmin:<YOUR_POSTGRES_PASSWORD>@pg-rewind-prod.postgre
 
 ## 7. Populate Key Vault Secrets
 
-The Bicep deployment created 6 placeholder secrets with value `REPLACE_ME`. Replace them with real values:
+The Bicep deployment creates the Key Vault with access policies but does **not** create secrets (to prevent redeployments from overwriting real values). Set all required secrets via Azure CLI:
 
 ```bash
 VAULT_NAME="kv-rewind-prod"
@@ -253,6 +253,16 @@ az keyvault secret set --vault-name $VAULT_NAME \
 az keyvault secret set --vault-name $VAULT_NAME \
   --name "AUTH-GOOGLE-SECRET" \
   --value "<YOUR_GOOGLE_CLIENT_SECRET>"
+
+# 7. GHCR username (for pulling Docker images)
+az keyvault secret set --vault-name $VAULT_NAME \
+  --name "GHCR-USERNAME" \
+  --value "<YOUR_GITHUB_USERNAME>"
+
+# 8. GHCR token (GitHub PAT with packages:read scope)
+az keyvault secret set --vault-name $VAULT_NAME \
+  --name "GHCR-TOKEN" \
+  --value "<YOUR_GITHUB_PAT>"
 ```
 
 ### 7.1 Verify secrets are set
@@ -322,9 +332,11 @@ git push origin main
 The `deploy.yml` workflow will:
 1. Build backend Docker image → push to GHCR
 2. Build frontend Docker image → push to GHCR
-3. Deploy both images to Azure App Service
-4. Run Alembic migrations
-5. Perform a health check smoke test
+3. Clear any stale startup command on the backend App Service
+4. Deploy both images to Azure App Service
+5. Perform a liveness health check smoke test
+
+> **Note:** Database migrations run automatically inside the backend container on every startup via `entrypoint.sh`. There is no separate CI migration step.
 
 ### 9.2 Monitor the deployment
 
@@ -350,12 +362,21 @@ alembic upgrade head
 ### 10.1 Health check
 
 ```bash
+# Liveness probe (no dependencies)
+curl https://app-backend-rewind-prod.azurewebsites.net/api/health/liveness
+
+# Full readiness check (includes DB connectivity)
 curl https://app-backend-rewind-prod.azurewebsites.net/api/health
 ```
 
-Expected response:
+Expected liveness response:
 ```json
-{"status": "healthy", "database": "connected"}
+{"status": "ok"}
+```
+
+Expected readiness response:
+```json
+{"status": "ok", "db": "ok", "version": "0.1.0"}
 ```
 
 ### 10.2 Frontend
@@ -365,7 +386,7 @@ Open in browser:
 https://app-frontend-rewind-prod.azurewebsites.net
 ```
 
-You should see the Rewind dashboard (note: currently no auth, so it's publicly accessible).
+You should be redirected to the login page. Sign in with Google to access the Rewind dashboard.
 
 ### 10.3 Test the API
 
@@ -422,40 +443,39 @@ After setting up custom domains, update:
 
 1. **Backend CORS**: Add your custom domain to `CORS_ORIGINS` in the App Service configuration
 2. **Google OAuth**: Add the new redirect URI to the Google Cloud Console
-3. **NextAuth URL**: Update `NEXTAUTH_URL` in the frontend App Service configuration
+3. **Auth URL**: Update `AUTH_URL` in the frontend App Service configuration
 
 ---
 
-## 12. Frontend Auth Setup (NextAuth)
+## 12. Frontend Auth (NextAuth v5)
 
-> **Note:** As of the current codebase, NextAuth is NOT implemented in the frontend. This section documents what needs to be implemented before production use.
+Authentication is fully implemented using NextAuth v5 (Auth.js) with the Google provider.
 
-### 12.1 What's needed
+### 12.1 Architecture
 
-The following must be implemented in the frontend before the app can be used in production with authentication:
+- **`src/auth.ts`** — NextAuth configuration with Google provider, JWT session strategy, and Google sub → UUID v5 mapping
+- **`src/app/api/auth/[...nextauth]/route.ts`** — Route handler wiring
+- **`src/app/login/page.tsx`** — Login page with Google sign-in button
+- **`src/components/providers/session-provider.tsx`** — Client-side SessionProvider
+- **`src/lib/backend-proxy.ts`** / **`src/proxy.ts`** — BFF proxy that resolves user session via `auth()` and forwards requests to the Python backend with `X-User-Id` and `X-Backend-Secret` headers
 
-1. Install `next-auth` (or `@auth/nextjs` v5) dependency
-2. Create `src/app/api/auth/[...nextauth]/route.ts` with Google provider
-3. Create `src/middleware.ts` to protect `/dashboard/**` routes
-4. Add `SessionProvider` to root layout
-5. Create BFF proxy API routes (`src/app/api/sessions/route.ts`, etc.) that:
-   - Resolve the user session via `auth()`
-   - Forward requests to the Python backend with `X-User-Id` and `X-Backend-Secret` headers
-6. Update `api.ts` to call the BFF proxy routes instead of the backend directly
-7. Create a login page at `src/app/login/page.tsx`
+Route protection is handled at the page level via the `auth()` function (no middleware.ts).
 
-### 12.2 Required environment variables for NextAuth
+### 12.2 Required environment variables
 
-Set these on the frontend App Service (or in `packages/web/.env.local` for local dev):
+These are set on the frontend App Service via Bicep and Key Vault references:
 
-| Variable | Value |
-|------|-------|
-| `NEXTAUTH_URL` | `https://rewind.yourdomain.com` (or Azure hostname) |
-| `AUTH_SECRET` | (generated in step 4) |
-| `AUTH_GOOGLE_ID` | (from Google Cloud Console) |
-| `AUTH_GOOGLE_SECRET` | (from Google Cloud Console) |
-| `BACKEND_URL` | `https://app-backend-rewind-prod.azurewebsites.net` |
-| `BACKEND_SECRET` | (same as backend's `BACKEND_SECRET`) |
+| Variable | Description | Source |
+|----------|-------------|--------|
+| `AUTH_URL` | Public URL of the frontend | Bicep (`appservice.bicep`) |
+| `AUTH_TRUST_HOST` | Trust the `X-Forwarded-Host` header | Bicep (set to `true`) |
+| `AUTH_SECRET` | NextAuth JWT encryption secret | Key Vault |
+| `AUTH_GOOGLE_ID` | Google OAuth Client ID | Key Vault |
+| `AUTH_GOOGLE_SECRET` | Google OAuth Client Secret | Key Vault |
+| `BACKEND_URL` | Internal backend URL | Bicep |
+| `BACKEND_SECRET` | Shared secret for BFF proxy | Key Vault |
+
+> **Important:** `AUTH_URL` must match the public hostname exactly. Without it, NextAuth defaults to the container's internal address (`0.0.0.0:3000`), causing OAuth callback failures.
 
 ---
 
@@ -467,8 +487,6 @@ Set these on the frontend App Service (or in `packages/web/.env.local` for local
 cd cli/
 pip install -e .
 ```
-
-> **Known issue:** You may need to also `pip install pydantic` — it is currently missing from `pyproject.toml` dependencies.
 
 ### 13.2 Login
 
@@ -579,7 +597,7 @@ traces
 
 ### 15.1 Database migrations
 
-Migrations run automatically on each deploy. To run manually:
+Migrations run automatically on each container startup via `entrypoint.sh`. To run manually:
 
 ```bash
 az webapp ssh --name app-backend-rewind-prod --resource-group rg-rewind-prod
@@ -660,6 +678,13 @@ az postgres flexible-server update \
 - Check GitHub Actions logs for specific errors
 - Verify `AZURE_CREDENTIALS` secret is still valid (service principals expire)
 - Ensure GHCR has write permissions (repo Settings > Actions > General)
+- If the backend returns 503 with `Unterminated quoted string` in Docker logs, a stale `appCommandLine` is overriding the Dockerfile CMD. The deploy workflow clears this automatically, but you can also fix manually:
+  ```bash
+  az resource update \
+    --ids "/subscriptions/<SUB_ID>/resourceGroups/<RG>/providers/Microsoft.Web/sites/<APP>/config/web" \
+    --set properties.appCommandLine=""
+  az webapp restart --name <APP> --resource-group <RG>
+  ```
 
 ### Frontend can't reach backend
 - Check CORS configuration on backend App Service
@@ -692,7 +717,8 @@ az postgres flexible-server update \
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `NEXTAUTH_URL` | Public URL of the frontend | `https://rewind.yourdomain.com` |
+| `AUTH_URL` | Public URL of the frontend | `https://app-frontend-rewind-prod.azurewebsites.net` |
+| `AUTH_TRUST_HOST` | Trust reverse proxy headers | `true` |
 | `AUTH_SECRET` | NextAuth JWT encryption secret | Key Vault reference |
 | `AUTH_GOOGLE_ID` | Google OAuth Client ID | Key Vault reference |
 | `AUTH_GOOGLE_SECRET` | Google OAuth Client Secret | Key Vault reference |

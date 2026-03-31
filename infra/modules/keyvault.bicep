@@ -1,9 +1,23 @@
 // ──────────────────────────────────────────────
 // Module: keyvault.bicep
 // Provisions Azure Key Vault with access
-// policies for App Service managed identities
-// and placeholder secrets for the Rewind
-// platform.
+// policies for App Service managed identities.
+//
+// IMPORTANT: Secrets are NOT managed by Bicep.
+// They must be set via Azure CLI after initial
+// provisioning to avoid overwriting real values
+// on redeployment. Required secrets:
+//
+//   az keyvault secret set --vault-name <name> --name <SECRET> --value <value>
+//
+//   AUTH-SECRET                      (openssl rand -base64 32)
+//   BACKEND-SECRET                   (openssl rand -base64 32)
+//   DATABASE-URL                     (postgresql+asyncpg://...)
+//   AZURE-STORAGE-CONNECTION-STRING  (from Azure portal)
+//   AUTH-GOOGLE-ID                   (Google Cloud Console)
+//   AUTH-GOOGLE-SECRET               (Google Cloud Console)
+//   GHCR-USERNAME                    (GitHub username)
+//   GHCR-TOKEN                       (GitHub PAT with packages:read)
 // ──────────────────────────────────────────────
 
 @description('Name of the Key Vault.')
@@ -56,75 +70,6 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
         }
       }
     ]
-  }
-}
-
-// ── Placeholder Secrets ──────────────────────
-// These are created with empty values. Actual
-// secret values must be set manually (or via a
-// deployment script) after initial provisioning.
-
-resource secretAuthSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
-  parent: keyVault
-  name: 'AUTH-SECRET'
-  properties: {
-    value: 'REPLACE_ME'
-  }
-}
-
-resource secretBackendSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
-  parent: keyVault
-  name: 'BACKEND-SECRET'
-  properties: {
-    value: 'REPLACE_ME'
-  }
-}
-
-resource secretDatabaseUrl 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
-  parent: keyVault
-  name: 'DATABASE-URL'
-  properties: {
-    value: 'REPLACE_ME'
-  }
-}
-
-resource secretStorageConnectionString 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
-  parent: keyVault
-  name: 'AZURE-STORAGE-CONNECTION-STRING'
-  properties: {
-    value: 'REPLACE_ME'
-  }
-}
-
-resource secretGoogleId 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
-  parent: keyVault
-  name: 'AUTH-GOOGLE-ID'
-  properties: {
-    value: 'REPLACE_ME'
-  }
-}
-
-resource secretGoogleSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
-  parent: keyVault
-  name: 'AUTH-GOOGLE-SECRET'
-  properties: {
-    value: 'REPLACE_ME'
-  }
-}
-
-resource secretGhcrUsername 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
-  parent: keyVault
-  name: 'GHCR-USERNAME'
-  properties: {
-    value: 'REPLACE_ME'
-  }
-}
-
-resource secretGhcrToken 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
-  parent: keyVault
-  name: 'GHCR-TOKEN'
-  properties: {
-    value: 'REPLACE_ME'
   }
 }
 
