@@ -155,10 +155,12 @@ async def search_sessions(
         rank = func.ts_rank(MessageChunk.search_vector, tsquery).label("rank")
         select_cols.extend([headline, rank])
     else:
-        select_cols.extend([
-            literal(None).label("headline"),
-            literal(0).label("rank"),
-        ])
+        select_cols.extend(
+            [
+                literal(None).label("headline"),
+                literal(0).label("rank"),
+            ]
+        )
 
     # -- main query ------------------------------------------------------------
     stmt = (
@@ -184,16 +186,18 @@ async def search_sessions(
             snippet = sanitize_snippet(row.headline)
         else:
             snippet = highlight_substring(row.content, cjk_part)
-        results.append({
-            "session_id": row.session_id,
-            "session_title": row.session_title,
-            "source": row.source,
-            "started_at": row.started_at,
-            "message_id": row.message_id,
-            "ordinal": row.ordinal,
-            "snippet": snippet,
-            "role": row.role,
-        })
+        results.append(
+            {
+                "session_id": row.session_id,
+                "session_title": row.session_title,
+                "source": row.source,
+                "started_at": row.started_at,
+                "message_id": row.message_id,
+                "ordinal": row.ordinal,
+                "snippet": snippet,
+                "role": row.role,
+            }
+        )
 
     # -- total count -----------------------------------------------------------
     count_stmt = (

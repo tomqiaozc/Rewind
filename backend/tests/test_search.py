@@ -124,4 +124,3 @@ class TestHighlightSubstring:
         result = highlight_substring("前面的内容测试", "测试")
         assert not result.endswith("...")
         assert "<mark>测试</mark>" in result
-
