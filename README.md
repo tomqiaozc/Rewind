@@ -2,15 +2,30 @@
 
 AI coding session intelligence platform. Ingest, index, search, and replay conversations from AI coding assistants.
 
+**Live:** [app-frontend-rwnd-prod.azurewebsites.net](https://app-frontend-rwnd-prod.azurewebsites.net)
+
 ## What it does
 
 Rewind captures your AI coding assistant conversations (Claude Code, OpenCode, Gemini CLI), syncs them to the cloud, and provides a web dashboard for searching, replaying, and organizing sessions.
 
-**Core workflows:**
 - **Sync** — CLI discovers local AI tool sessions, parses them, uploads to cloud
 - **Search** — Full-text search across all session content and tool invocations
 - **Replay** — Message-by-message session replay with code highlighting
 - **Organize** — Star, tag, trash, and filter sessions by source/project
+
+## Production Environment
+
+| Resource | Value |
+|----------|-------|
+| Frontend | [app-frontend-rwnd-prod.azurewebsites.net](https://app-frontend-rwnd-prod.azurewebsites.net) |
+| Backend API | [app-backend-rwnd-prod.azurewebsites.net](https://app-backend-rwnd-prod.azurewebsites.net) |
+| Region | Azure East Asia |
+| Database | PostgreSQL Flexible Server (`pg-rwnd-prod`) |
+| Blob Storage | Azure Storage Account (`strwndprod`) |
+| Key Vault | `kv-rwnd-prod` |
+| Resource Group | `rg-rewind-ea` |
+| Container Images | `ghcr.io/tomqiaozc/rewind/backend`, `ghcr.io/tomqiaozc/rewind/frontend` |
+| CI/CD | GitHub Actions → GHCR → Azure App Service |
 
 ## Architecture
 
@@ -21,7 +36,7 @@ CLI → FastAPI API (Bearer rw_... key) → PostgreSQL / Azure Blob
 
 | Component | Technology |
 |-----------|-----------|
-| Backend | Python, FastAPI, SQLAlchemy 2.0 (async), asyncpg, Pydantic v2 |
+| Backend | Python 3.9+, FastAPI, SQLAlchemy 2.0 (async), asyncpg, Pydantic v2 |
 | Frontend | Next.js 16, React 19, Tailwind CSS v4, shadcn/ui, Recharts |
 | CLI | Python, Typer, httpx, Rich |
 | Database | PostgreSQL 16 (FTS via tsvector) |
@@ -29,42 +44,42 @@ CLI → FastAPI API (Bearer rw_... key) → PostgreSQL / Azure Blob
 | Auth | NextAuth v5 (Google OAuth) + API keys for CLI |
 | Infra | Azure App Service, Bicep IaC, GitHub Actions CI/CD |
 
-## Project Structure
+## Getting Started (Production)
 
-```
-├── backend/           # Python FastAPI API server
-│   ├── src/
-│   │   ├── api/       # API route handlers
-│   │   ├── auth/      # Dual auth (API key + BFF proxy)
-│   │   ├── core/      # Shared types, constants, validators
-│   │   ├── models/    # SQLAlchemy ORM models
-│   │   ├── schemas/   # Pydantic request/response schemas
-│   │   ├── services/  # Business logic
-│   │   └── middleware/ # Rate limiting, logging, security headers
-│   ├── alembic/       # Database migrations
-│   └── tests/
-├── packages/web/      # Next.js frontend
-│   └── src/
-│       ├── app/       # App Router pages
-│       ├── components/ # React components + shadcn/ui
-│       └── lib/       # API client, types, utilities
-├── cli/               # Python CLI for syncing sessions
-│   └── src/
-│       ├── commands/  # login, sync, status
-│       ├── parsers/   # Claude, OpenCode, Gemini parsers
-│       ├── drivers/   # File and DB incremental readers
-│       └── upload/    # Upload engine
-├── infra/             # Azure Bicep templates
-│   ├── main.bicep
-│   ├── modules/       # App Service, PostgreSQL, Storage, Key Vault, Monitoring
-│   └── parameters/    # dev.bicepparam, prod.bicepparam
-├── docs/
-│   ├── blueprint/     # Architecture and implementation blueprint
-│   └── deployment-manual.md  # Production deployment guide
-└── .github/workflows/ # CI and deploy pipelines
+### 1. Sign in to the dashboard
+
+Open [app-frontend-rwnd-prod.azurewebsites.net](https://app-frontend-rwnd-prod.azurewebsites.net) and sign in with Google.
+
+### 2. Create an API key
+
+Go to **Settings > API Keys**, enter a device name, and click **Create Key**. Copy the `rw_...` key immediately — it's shown only once.
+
+### 3. Install the CLI
+
+```bash
+cd cli
+pip install -e .
 ```
 
-## Quick Start (Local Development)
+If `rewind` is not found after install, add the Python scripts directory to your PATH:
+
+```bash
+# macOS (Python 3.9)
+echo 'export PATH="$HOME/Library/Python/3.9/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### 4. Log in and sync
+
+```bash
+rewind login --api-url https://app-backend-rwnd-prod.azurewebsites.net
+# Paste your API key when prompted
+
+rewind sync           # Upload all AI sessions
+rewind status         # Check sync state
+```
+
+## Local Development
 
 ### Prerequisites
 
@@ -72,50 +87,17 @@ CLI → FastAPI API (Bearer rw_... key) → PostgreSQL / Azure Blob
 - Node.js 20+
 - Docker & Docker Compose
 
-### 1. Clone and install dependencies
+### Setup
 
 ```bash
-git clone <repo-url> && cd Rewind
-make install
+git clone https://github.com/tomqiaozc/Rewind.git && cd Rewind
+make install          # Install all deps (backend + CLI + frontend)
+make up               # Start PostgreSQL + Azurite containers
+cp .env.example .env  # Defaults work for local dev
+make migrate          # Run database migrations
 ```
 
-### 2. Start local services (PostgreSQL + Azurite)
-
-```bash
-make up
-```
-
-### 3. Create the blob storage container
-
-Azurite doesn't auto-create containers. Run this once after first `make up`:
-
-```bash
-python3 -c "
-from azure.storage.blob import BlobServiceClient
-c = BlobServiceClient.from_connection_string(
-    'DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;'
-    'AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;'
-    'BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;'
-)
-c.create_container('sessions')
-print('Container created')
-"
-```
-
-### 4. Configure environment
-
-```bash
-cp .env.example .env
-# Edit .env if needed (defaults work for local dev)
-```
-
-### 5. Run database migrations
-
-```bash
-make migrate
-```
-
-### 6. Create a dev user and API key
+### Create a dev user and API key
 
 ```bash
 docker exec -i rewind-postgres-1 psql -U rewind -d rewind <<'SQL'
@@ -133,110 +115,57 @@ VALUES (
 SQL
 ```
 
-### 7. Start the backend
+### Start services
 
 ```bash
-make backend-dev
-# API available at http://localhost:8000
-# Health check: http://localhost:8000/api/health
+make backend-dev      # FastAPI on http://localhost:8000
+make web-dev          # Next.js on http://localhost:3000 (separate terminal)
 ```
 
-### 8. Configure and start the frontend (in a separate terminal)
+For the frontend, create `packages/web/.env.local`:
 
-Create `packages/web/.env.local` with the dev API key:
-
-```bash
-echo "NEXT_PUBLIC_API_KEY=rw_dev_local_key_1234567890abcdef1234567890abcdef" > packages/web/.env.local
+```
+NEXT_PUBLIC_API_KEY=rw_dev_local_key_1234567890abcdef1234567890abcdef
 ```
 
-Then start the frontend:
-
-```bash
-make web-dev
-# Dashboard at http://localhost:3000
-```
-
-### 9. Install and use the CLI
+### Use the CLI locally
 
 ```bash
 cd cli && pip install -e .
-rewind login          # Configure API URL and key
+rewind login          # Use default http://localhost:8000
 rewind sync --dry-run # Preview what would be synced
-rewind sync           # Sync AI sessions to the backend
-rewind status         # Check auth and tracked files
+rewind sync           # Sync AI sessions
 ```
 
 ## Common Commands
 
 | Command | Description |
 |---------|-------------|
-| `make up` | Start PostgreSQL + Azurite containers |
-| `make down` | Stop containers |
 | `make install` | Install all dependencies |
+| `make up` / `make down` | Start / stop Docker containers |
 | `make migrate` | Run database migrations |
-| `make backend-dev` | Start FastAPI dev server (port 8000) |
-| `make web-dev` | Start Next.js dev server (port 3000) |
-| `make test` | Run all backend + CLI tests |
+| `make backend-dev` | FastAPI dev server (port 8000) |
+| `make web-dev` | Next.js dev server (port 3000) |
+| `make test` | Run all tests (backend + CLI) |
 | `make lint` | Lint all code (Ruff + ESLint) |
 | `make typecheck` | Type-check all code (mypy + tsc) |
-| `make docker-build` | Build Docker images for backend + frontend |
-
-## CLI Commands
-
-| Command | Description |
-|---------|-------------|
-| `rewind login` | Configure API URL and API key |
-| `rewind sync` | Discover and upload AI sessions |
-| `rewind sync --source claude` | Sync only Claude Code sessions |
-| `rewind sync --dry-run` | Preview without uploading |
-| `rewind status` | Show auth status and tracked files |
-| `rewind --version` | Show CLI version |
 
 ## Supported AI Tools
 
 | Tool | Format | Status |
 |------|--------|--------|
-| Claude Code | JSONL (`~/.claude/projects/**/*.jsonl`) | Implemented |
-| OpenCode | SQLite + JSON fallback (`~/.local/share/opencode/`) | Implemented |
-| Gemini CLI | JSON (`~/.gemini/tmp/**/chats/session-*.json`) | Implemented |
-| Codex CLI | JSONL | Planned |
-| VSCode Copilot | CRDT JSONL | Planned |
-
-## Testing
-
-```bash
-# All tests
-make test
-
-# Backend only
-cd backend && pytest
-
-# CLI only
-cd cli && pytest
-
-# With verbose output
-cd backend && pytest -v
-```
-
-## Deployment
-
-See [docs/deployment-manual.md](docs/deployment-manual.md) for the complete production deployment guide covering:
-- Azure infrastructure provisioning (Bicep)
-- Google OAuth setup
-- Secret management (Key Vault)
-- CI/CD pipeline (GitHub Actions)
-- Custom domain & TLS
-- Monitoring & alerting
+| Claude Code | JSONL (`~/.claude/projects/**/*.jsonl`) | Supported |
+| OpenCode | SQLite + JSON (`~/.local/share/opencode/`) | Supported |
+| Gemini CLI | JSON (`~/.gemini/tmp/**/chats/session-*.json`) | Supported |
 
 ## Documentation
 
 | Document | Description |
 |----------|-------------|
-| [Deployment Manual](docs/deployment-manual.md) | Step-by-step production deployment |
+| [User Guide](docs/user-guide.md) | End-to-end feature walkthrough |
+| [Deployment Manual](docs/deployment-manual.md) | Production deployment guide |
 | [Production Runbook](docs/runbook.md) | Operations and incident response |
-| [Blueprint Index](docs/blueprint/00-index.md) | Architecture and design decisions |
-| [Architecture Blueprint](docs/blueprint/03-architecture-blueprint.md) | Detailed technical architecture |
-| [Implementation Plan](docs/blueprint/04-azure-and-implementation.md) | Phased build plan |
+| [Architecture Blueprint](docs/blueprint/03-architecture-blueprint.md) | Technical architecture |
 
 ## License
 
