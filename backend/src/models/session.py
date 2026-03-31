@@ -143,7 +143,7 @@ class MessageChunk(Base):
     # FTS: tsvector column — GENERATED ALWAYS AS is handled in the migration,
     # not in the model. Mark as Computed so SQLAlchemy excludes it from INSERT/UPDATE.
     search_vector: Mapped[Optional[str]] = mapped_column(
-        TSVECTOR, Computed("to_tsvector('english', content)", persisted=True), nullable=True
+        TSVECTOR, Computed("to_tsvector('simple', content)", persisted=True), nullable=True
     )
 
     __table_args__ = (UniqueConstraint("message_id", "chunk_index"),)

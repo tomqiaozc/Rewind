@@ -55,7 +55,7 @@ async def search_sessions(
     * ``role``
     """
 
-    tsquery = func.plainto_tsquery("english", query)
+    tsquery = func.plainto_tsquery("simple", query)
 
     # -- shared filter conditions -------------------------------------------
     filters = [
@@ -68,7 +68,7 @@ async def search_sessions(
 
     # -- headline expression ------------------------------------------------
     headline = func.ts_headline(
-        "english",
+        "simple",
         MessageChunk.content,
         tsquery,
         "StartSel=\\x01, StopSel=\\x02, MaxWords=40, MinWords=20",
