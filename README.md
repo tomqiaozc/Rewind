@@ -124,6 +124,8 @@ CLI → FastAPI API (Bearer rw_... key) → PostgreSQL / Azure Blob
 
 For local development setup, see [CLAUDE.md](CLAUDE.md).
 
+<!-- Cloud environment smoke check: this comment verifies the pull request workflow. -->
+
 ## License
 
 MIT
